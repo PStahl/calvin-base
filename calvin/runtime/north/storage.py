@@ -60,6 +60,7 @@ class Storage(object):
     def trigger_flush(self, delay=None):
         """ Trigger a flush of internal data
         """
+        _log.debug("Trigger flush with delay {}".format(delay))
         if self.localstore or self.localstore_sets:
             if delay is None:
                 delay = self.flush_timeout
@@ -118,7 +119,7 @@ class Storage(object):
         """
         _log.analyze(self.node.id, "+", None)
         if self.starting:
-            self.storage.start(iface=iface, cb=CalvinCB(self.started_cb, org_cb=cb))
+            self.storage.start(iface=iface, ignore_self=False, cb=CalvinCB(self.started_cb, org_cb=cb))
 
         if not self.proxy:
             self._init_proxy()
@@ -408,9 +409,8 @@ class Storage(object):
             del self.localstore_sets[prefix + key]
         if self.started:
             self.set(prefix, key, None, cb)
-        else:
-            if cb:
-                cb(key, True)
+        elif cb:
+            cb(key, True)
 
     ### Calvin object handling ###
 
@@ -419,10 +419,10 @@ class Storage(object):
         Add node to storage
         """
         self.set(prefix="node-", key=node.id,
-                  value={"uri": node.uri,
-                         "control_uri": node.control_uri,
-                         "attributes": {'public': node.attributes.get_public(),
-                                        'indexed_public': node.attributes.get_indexed_public(as_list=False)}}, cb=cb)
+                 value={"uri": node.uri,
+                        "control_uri": node.control_uri,
+                        "attributes": {'public': node.attributes.get_public(),
+                                       'indexed_public': node.attributes.get_indexed_public(as_list=False)}}, cb=cb)
         self._add_node_index(node)
         # Store all actors on this node in storage
         GlobalStore(node=node).export()
@@ -517,13 +517,16 @@ class Storage(object):
         Add actor and its ports to storage
         """
         _log.debug("Add actor %s id %s" % (actor, node_id))
+
         data = {"name": actor.name, "type": actor._type, "node_id": node_id}
+
         inports = []
         for p in actor.inports.values():
             port = {"id": p.id, "name": p.name}
             inports.append(port)
             self.add_port(p, node_id, actor.id, "in")
         data["inports"] = inports
+
         outports = []
         for p in actor.outports.values():
             port = {"id": p.id, "name": p.name}
