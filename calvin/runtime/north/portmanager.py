@@ -160,12 +160,7 @@ class PortManager(object):
 
             endp = self._create_tunnel_endpoint(port, tunnel, payload['from_rt_uuid'], payload['port_id'])
             self._attach_endpoint(port, endp)
-
-            # Update storage
-            if isinstance(port, InPort):
-                self.node.storage.add_port(port, self.node.id, port.owner.id, "in")
-            else:
-                self.node.storage.add_port(port, self.node.id, port.owner.id, "out")
+            self._add_to_storage(port)
 
             _log.analyze(self.node.id, "+ OK", payload, peer_node_id=payload['from_rt_uuid'])
             return response.CalvinResponse(response.OK, {'port_id': port.id})
@@ -453,11 +448,7 @@ class PortManager(object):
         if state['callback']:
             state['callback'](status=response.CalvinResponse(True), **state)
 
-        # Update storage
-        if isinstance(port, InPort):
-            self.node.storage.add_port(port, self.node.id, port.owner.id, "in")
-        else:
-            self.node.storage.add_port(port, self.node.id, port.owner.id, "out")
+        self._add_to_storage(port)
 
     def _connect_via_local(self, inport, outport):
         """ Both connecting ports are local, just connect them """
@@ -468,9 +459,11 @@ class PortManager(object):
         self._attach_endpoint(inport, ein)
         self._attach_endpoint(outport, eout)
 
-        # Update storage
-        self.node.storage.add_port(inport, self.node.id, inport.owner.id, "in")
-        self.node.storage.add_port(outport, self.node.id, outport.owner.id, "out")
+        self._add_to_storage(inport)
+        self._add_to_storage(outport)
+
+    def _add_to_storage(self, port):
+        self.node.storage.add_port(port, self.node.id, port.owner.id, port.direction)
 
     def disconnect(self, callback=None, actor_id=None, port_name=None, port_dir=None, port_id=None):
         """ Do disconnect for port(s)
