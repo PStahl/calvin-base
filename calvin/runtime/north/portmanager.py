@@ -525,7 +525,7 @@ class PortManager(object):
             self._disconnect_actor_port(callback, actor_id, port_name, port_dir, port_id)
 
     def _disconnect_all_actor_ports(self, callback, actor_id, port_name, port_dir, port_id):
-        port_ids = []
+        ports = []
         # We disconnect all ports on an actor
         if actor_id not in self.node.am.actors:
             status = response.CalvinResponse(response.NOT_FOUND, "Actor %s must be local" % (actor_id))
@@ -536,69 +536,47 @@ class PortManager(object):
                 raise Exception(str(status))
 
         actor = self.node.am.actors[actor_id]
-        port_ids.extend([p.id for p in actor.inports.itervalues()])
-        port_ids.extend([p.id for p in actor.outports.itervalues()])
+        ports.extend([p for p in actor.inports.itervalues()])
+        ports.extend([p for p in actor.outports.itervalues()])
         # Need to collect all callbacks into one
         if callback:
-            callback = CalvinCB(self._disconnecting_actor_cb, _callback=callback, port_ids=port_ids)
+            callback = CalvinCB(self._disconnecting_actor_cb, _callback=callback, ports=ports)
 
-        self._disconnect_ports(port_ids, callback)
+        self._disconnect_ports(ports, callback)
 
     def _disconnect_actor_port(self, callback, actor_id, port_name, port_dir, port_id):
-        port_ids = []
         # Just one port to disconnect
-        if port_id:
-            port_ids.append(port_id)
-        else:
-            # Awkward but lets get the port id from name etc so that the rest can loop over port ids
-            try:
-                port = self._get_local_port(actor_id, port_name, port_dir, port_id)
-            except NoSuchPortException:
-                status = response.CalvinResponse(response.NOT_FOUND, "Port %s on actor %s must be local" % (port_name if port_name else port_id, actor_id if actor_id else "some"))
-                if callback:
-                    callback(status=status, actor_id=actor_id, port_name=port_name, port_id=port_id)
-                    return
-                else:
-                    raise Exception(str(status))
+        try:
+            port = self._get_local_port(actor_id, port_name, port_dir, port_id)
+        except NoSuchPortException:
+            status = response.CalvinResponse(response.NOT_FOUND, "Port %s on actor %s must be local" % (port_name if port_name else port_id, actor_id if actor_id else "some"))
+            if callback:
+                callback(status=status, actor_id=actor_id, port_name=port_name, port_id=port_id)
+                return
             else:
-                # Found locally
-                port_ids.append(port.id)
+                raise Exception(str(status))
 
-        self._disconnect_ports(port_ids, callback)
+        self._disconnect_ports([port], callback)
 
-    def _disconnect_ports(self, port_ids, callback):
-        _log.analyze(self.node.id, "+", {'port_ids': port_ids})
+    def _disconnect_ports(self, ports, callback):
+        _log.analyze(self.node.id, "+", {'port_ids': [p.id for p in ports]})
 
         # Run over copy of list of ports since modified inside the loop
-        for port_id in port_ids[:]:
-            self._disconnect_port(callback, port_id)
+        for port in ports[:]:
+            self._disconnect_port(callback, port)
 
-    def _disconnect_port(self, callback=None, port_id=None):
+    def _disconnect_port(self, callback, port):
         """ Obtain any missing information to enable disconnecting one port and make the disconnect"""
         # Collect all parameters into a state that we keep for the sub functions and callback
         state = {
             'callback': callback,
-            'port_id': port_id,
+            'port_id': port.id,
             'peer_ids': None
         }
-        # Check if port actually is local
-        try:
-            port = self._get_local_port(None, None, None, port_id)
-        except NoSuchPortException:
-            # not local
-            status = response.CalvinResponse(response.NOT_FOUND, "Port %s must be local" % (port_id))
-            if callback:
-                callback(status=status, port_id=port_id)
-                return
-            else:
-                raise Exception(str(status))
-        else:
-            # Found locally
-            state['port_name'] = port.name
-            state['port_dir'] = port.direction
-            state['actor_id'] = port.owner.id if port.owner else None
+        state['port_name'] = port.name
+        state['port_dir'] = port.direction
+        state['actor_id'] = port.owner.id if port.owner else None
 
-        port = self.ports[state['port_id']]
         # Now check the peer port, peer_ids is list of (peer_node_id, peer_port_id) tuples
         peer_ids = self._get_port_peers(port)
 
@@ -666,7 +644,7 @@ class PortManager(object):
                 if state['callback']:
                     state['callback'](status=response.CalvinResponse(True), **state)
 
-    def _disconnecting_actor_cb(self, status, _callback, port_ids, **state):
+    def _disconnecting_actor_cb(self, status, _callback, ports, **state):
         """ Get called for each of the actor's ports when disconnecting, but callback should only be called once
             status: OK or not
             _callback: original callback
@@ -674,15 +652,16 @@ class PortManager(object):
             state: dictionary keeping disconnect information
         """
         # Send negative response if not already done it
-        if not status and port_ids:
+        if not status and ports:
             if _callback:
-                del port_ids[:]
+                del ports[:]
                 _callback(status=response.CalvinResponse(False), actor_id=state['actor_id'])
-        if state['port_id'] in port_ids:
+        match = [port for port in ports if port.id == state['port_id']]
+        if match:
             # Remove this port from list
-            port_ids.remove(state['port_id'])
+            ports.remove(match[0])
             # If all ports done send positive response
-            if not port_ids and _callback:
+            if not ports and _callback:
                 _callback(status=response.CalvinResponse(True), actor_id=state['actor_id'])
 
     def disconnection_request(self, payload):
