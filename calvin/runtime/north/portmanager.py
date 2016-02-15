@@ -571,12 +571,11 @@ class PortManager(object):
         state = {
             'callback': callback,
             'port_id': port.id,
-            'peer_ids': None
+            'peer_ids': None,
+            'port_name': port.name,
+            'port_dir': port.direction,
+            'actor_id': port.owner.id if port.owner else None
         }
-        state['port_name'] = port.name
-        state['port_dir'] = port.direction
-        state['actor_id'] = port.owner.id if port.owner else None
-
         # Now check the peer port, peer_ids is list of (peer_node_id, peer_port_id) tuples
         peer_ids = self._get_port_peers(port)
 
@@ -591,6 +590,16 @@ class PortManager(object):
 
         # Inform all the remote ports of the disconnect
         remote_peers = [pp for pp in peer_ids if pp[0] and pp[0] != 'local']
+        self._disconnect_remote_peers(state, remote_peers)
+
+        # Done disconnecting the port
+        if not remote_peers or not ok:
+            self.disconnecting_ports.pop(state['port_id'])
+            if state['callback']:
+                _log.analyze(self.node.id, "+ DONE", {k: state[k] for k in state.keys() if k != 'callback'})
+                state['callback'](status=response.CalvinResponse(ok), **state)
+
+    def _disconnect_remote_peers(self, state, remote_peers):
         # Keep track of disconnection of remote peer ports
         self.disconnecting_ports[state['port_id']] = remote_peers
         for peer_node_id, peer_port_id in remote_peers:
@@ -600,13 +609,6 @@ class PortManager(object):
                                        port_id=state['port_id'],
                                        peer_node_id=peer_node_id,
                                        peer_port_id=peer_port_id)
-
-        # Done disconnecting the port
-        if not remote_peers or not ok:
-            self.disconnecting_ports.pop(state['port_id'])
-            if state['callback']:
-                _log.analyze(self.node.id, "+ DONE", {k: state[k] for k in state.keys() if k != 'callback'})
-                state['callback'](status=response.CalvinResponse(ok), **state)
 
     def _disconnect_and_destroy_endpoints(self, port):
         # Disconnect and destroy the endpoints
