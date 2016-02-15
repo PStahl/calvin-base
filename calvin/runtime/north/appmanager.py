@@ -28,6 +28,18 @@ from calvin.runtime.south.plugins.async import async
 _log = calvinlogger.get_logger(__name__)
 
 
+def component_name(name, ns):
+    if is_component(name, ns):
+        return ':'.join(name.split(':')[0:(2 if ns else 1)])
+    else:
+        return None
+
+
+def is_component(name, ns):
+    length = (len(ns) + 1) if ns else 0
+    return name.find(':', length) > -1
+
+
 class Application(object):
 
     """ Application class """
@@ -68,12 +80,11 @@ class Application(object):
         actors = {v: [k] for k, v in self.actors.items() if v is not None}
         # Collect all actors under top component name
         components = {}
-        l = (len(ns) + 1) if ns else 0
         for name, _id in actors.iteritems():
-            if name.find(':', l) > -1:
+            if is_component(name, self.ns):
                 # This is a component
                 # component name including optional namespace
-                component = ':'.join(name.split(':')[0:(2 if ns else 1)])
+                component = component_name(name, self.ns)
                 if component in components.keys():
                     components[component] += _id
                 else:
@@ -107,26 +118,16 @@ class Application(object):
 
     def group_components(self):
         self.components = {}
-        l = (len(self.ns) + 1) if self.ns else 0
         for name in self.actors.values():
-            if name.find(':', l) > -1:
-                # This is part of a component
-                # component name including optional namespace
-                component = ':'.join(name.split(':')[0:(2 if self.ns else 1)])
+            if is_component(name, self.ns):
+                component = component_name(name, self.ns)
                 if component in self.components:
                     self.components[component].append(name)
                 else:
                     self.components[component] = [name]
 
-    def component_name(self, name):
-        l = (len(self.ns) + 1) if self.ns else 0
-        if name.find(':', l) > -1:
-            return ':'.join(name.split(':')[0:(2 if self.ns else 1)])
-        else:
-            return None
-
     def get_req(self, actor_name):
-        name = self.component_name(actor_name) or actor_name
+        name = component_name(actor_name, self.ns) or actor_name
         name = name.split(':', 1)[1] if self.ns else name
         return self.deploy_info['requirements'][name] if (self.deploy_info and 'requirements' in self.deploy_info and
                                                           name in self.deploy_info['requirements']) else None
@@ -591,26 +592,16 @@ class Deployer(object):
     # TODO Make deployer use the Application class group_components, component_name and get_req
     def group_components(self):
         self.components = {}
-        l = (len(self.ns) + 1) if self.ns else 0
         for name in self.deployable['actors']:
-            if name.find(':', l) > -1:
-                # This is part of a component
-                # component name including optional namespace
-                component = ':'.join(name.split(':')[0:(2 if self.ns else 1)])
+            if is_component(name, self.ns):
+                component = component_name(name, self.ns)
                 if component in self.components:
                     self.components[component].append(name)
                 else:
                     self.components[component] = [name]
 
-    def component_name(self, name):
-        l = (len(self.ns) + 1) if self.ns else 0
-        if name.find(':', l) > -1:
-            return ':'.join(name.split(':')[0:(2 if self.ns else 1)])
-        else:
-            return None
-
     def get_req(self, actor_name):
-        name = self.component_name(actor_name) or actor_name
+        name = component_name(actor_name, self.ns) or actor_name
         name = name.split(':', 1)[1] if self.ns else name
         return self.deploy_info['requirements'][name] if (self.deploy_info and 'requirements' in self.deploy_info and
                                                           name in self.deploy_info['requirements']) else []
