@@ -57,8 +57,8 @@ class PortManager(object):
         tunnel_peer_id = tunnel.peer_node_id
         try:
             self.tunnels.pop(tunnel_peer_id)
-        except:
-            pass
+        except Exception as e:
+            _log.debug("Failed to remove tunnel peer {} from tunnels: {}".format(tunnel_peer_id, e))
 
         # If a port connect have ordered a tunnel then it have a callback in pending
         # which want information on the failure
@@ -66,8 +66,8 @@ class PortManager(object):
             for cb in self.pending_tunnels[tunnel_peer_id]:
                 try:
                     cb(status=response.CalvinResponse(False))
-                except:
-                    pass
+                except Exception as e:
+                    _log.debug("Failed to call {}: {}".format(cb, e))
             self.pending_tunnels.pop(tunnel_peer_id)
         # We should always return True which sends an OK on the destruction of the tunnel
         return True
@@ -81,8 +81,8 @@ class PortManager(object):
             for cb in self.pending_tunnels[tunnel_peer_id]:
                 try:
                     cb(status=response.CalvinResponse(True))
-                except:
-                    pass
+                except Exception as e:
+                    _log.debug("Failed to call {}: {}".format(cb, e))
             self.pending_tunnels.pop(tunnel_peer_id)
 
     def recv_token_handler(self, tunnel, payload):
@@ -105,8 +105,8 @@ class PortManager(object):
         """ Gets called when a token is (N)ACKed for any port """
         try:
             port = self._get_local_port(port_id=payload['port_id'])
-        except:
-            pass
+        except Exception as e:
+            _log.debug("Failed to get local port: {}".format(e))
         else:
             # Send the reply to correct endpoint (an outport may have several when doing fan-out)
             for e in port.endpoints:
@@ -116,8 +116,8 @@ class PortManager(object):
                     if e.get_peer()[1] == payload['peer_port_id']:
                         e.reply(payload['sequencenbr'], payload['value'])
                         break
-                except:
-                    pass
+                except Exception as e:
+                    _log.debug("Failed to send reply: {}".format(e))
 
     def tunnel_recv_handler(self, tunnel, payload):
         """ Gets called when we receive a message over a tunnel """
@@ -249,9 +249,8 @@ class PortManager(object):
         if not state['peer_node_id'] and state['peer_port_id']:
             try:
                 self._get_local_port(None, None, None, peer_port_id)
-            except:
-                # not local
-                pass
+            except Exception as e:
+                _log.debug("Failed to get local port, peer_port_id: {}".format(peer_port_id))
             else:
                 # Found locally
                 state['peer_node_id'] = self.node.id
@@ -628,8 +627,9 @@ class PortManager(object):
         try:
             # Remove this peer from the list of remote peer ports
             self.disconnecting_ports[state['port_id']].remove(state['peer_id'])
-        except:
-            pass
+        except Exception as e:
+            _log.debug("Failed to remove peer {} from list of remote peer ports {}: {}".format(
+                state.get('peer_id'), self.disconnecting_ports, e))
         if not reply:
             # Got failed response do callback, but also remove port from dictionary indicating we have sent the callback
             self.disconnecting_ports.pop(state['port_id'])
