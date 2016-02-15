@@ -195,11 +195,17 @@ class CalvinProto(CalvinCBClass):
         _log.analyze(self.rt_id, "RECV", payload)
         try:
             self.network.link_check(payload['from_rt_uuid'])
-        except:
+        except Exception as e:
+            _log.error("Unknown runtime. Payload: {}. Error {}".format(payload, e))
             raise Exception("ERROR_UNKNOWN_RUNTIME")
 
-        if not ('cmd' in payload and payload['cmd'] in self.callback_valid_names()):
+        if 'cmd' not in payload:
+            _log.error("Missing command in {}, aborting.".format(payload))
+            raise Exception("MISSING_COMMAND")
+        elif not payload['cmd'] in self.callback_valid_names():
+            _log.error("Unknown command {}".format(payload['cmd']))
             raise Exception("ERROR_UNKOWN_COMMAND")
+
         # Call the proper handler for the command using CalvinCBClass
         self._callback_execute(payload['cmd'], payload)
 
