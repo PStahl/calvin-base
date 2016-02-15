@@ -239,26 +239,24 @@ class PortManager(object):
         try:
             port = self._get_local_port(actor_id, port_name, port_dir, port_id)
         except NoSuchPortException:
-            # not local
-            if port_id:
-                status = response.CalvinResponse(response.BAD_REQUEST, "First port %s must be local" % (port_id))
-            else:
-                status = response.CalvinResponse(response.BAD_REQUEST, "First port %s on actor %s must be local" % (port_name, actor_id))
-            if callback:
-                callback(status=status,
-                         actor_id=actor_id,
-                         port_name=port_name,
-                         port_id=port_id,
-                         peer_node_id=peer_node_id,
-                         peer_actor_id=peer_actor_id,
-                         peer_port_name=peer_port_name,
-                         peer_port_id=peer_port_id)
-                return
-            else:
-                raise Exception(str(status))
+            self._invalid_port(state)
         else:
             # Found locally
             state['port_id'] = port.id
+
+        state = self._find_peer_node(state)
+        if not state['peer_node_id'] and not self._connect_via_peer(state):
+            return
+        elif not ((peer_actor_id and peer_port_name) or peer_port_id):
+            self._invalid_peer_port_id(state)
+            return
+
+        self._connect(**state)
+
+    def _find_peer_node(self, state):
+        peer_node_id = state.get('peer_node_id')
+        peer_port_id = state.get('peer_port_id')
+        peer_actor_id = state.get('peer_actor_id')
 
         # Check if the peer port is local even if a missing peer_node_id
         if not peer_node_id and peer_actor_id in self.node.am.actors.iterkeys():
@@ -273,35 +271,64 @@ class PortManager(object):
                 # Found locally
                 state['peer_node_id'] = self.node.id
 
-        # Still no peer node id? ...
-        if not state['peer_node_id']:
-            if state['peer_port_id']:
-                # ... but an id of a port lets ask for more info
-                self.node.storage.get_port(state['peer_port_id'], CalvinCB(self._connect_by_peer_port_id, **state))
-                return
-            elif state['peer_actor_id'] and state['peer_port_name']:
-                # ... but an id of an actor lets ask for more info
-                self.node.storage.get_actor(state['peer_actor_id'], CalvinCB(self._connect_by_peer_actor_id, **state))
-                return
-            else:
-                # ... and no info on how to get more info, abort
-                status = response.CalvinResponse(response.BAD_REQUEST, "Need peer_node_id (%s), peer_actor_id(%s) and/or peer_port_id(%s)" % (peer_node_id, peer_actor_id, peer_port_id))
-                if callback:
-                    callback(status=status, actor_id=actor_id, port_name=port_name, port_id=port_id, peer_node_id=peer_node_id, peer_actor_id=peer_actor_id, peer_port_name=peer_port_name, peer_port_id=peer_port_id)
-                    return
-                else:
-                    raise Exception(str(status))
-        else:
-            if not ((peer_actor_id and peer_port_name) or peer_port_id):
-                # We miss information on to find the peer port
-                status = response.CalvinResponse(response.BAD_REQUEST, "Need peer_port_name (%s), peer_actor_id(%s) and/or peer_port_id(%s)" % (peer_port_name, peer_actor_id, peer_port_id))
-                if callback:
-                    callback(status=status, actor_id=actor_id, port_name=port_name, port_id=port_id, peer_node_id=peer_node_id, peer_actor_id=peer_actor_id, peer_port_name=peer_port_name, peer_port_id=peer_port_id)
-                    return
-                else:
-                    raise Exception(str(status))
+        return state
 
-        self._connect(**state)
+    def _connect_via_peer(self, state):
+        # Still no peer node id? ...
+        if state['peer_port_id']:
+            # ... but an id of a port lets ask for more info
+            self.node.storage.get_port(state['peer_port_id'], CalvinCB(self._connect_by_peer_port_id, **state))
+        elif state['peer_actor_id'] and state['peer_port_name']:
+            # ... but an id of an actor lets ask for more info
+            self.node.storage.get_actor(state['peer_actor_id'], CalvinCB(self._connect_by_peer_actor_id, **state))
+        else:
+            # ... and no info on how to get more info, abort
+            self._invalid_peer_port_id(state)
+            return False
+
+        return True
+
+    def _invalid_port(self, state):
+        # not local
+        port_id = state.get('port_id')
+        if port_id:
+            msg = "First port %s must be local" % (port_id)
+        else:
+            msg = "First port %s on actor %s must be local" % (state['port_name'], state['actor_id'])
+        status = response.CalvinResponse(response.BAD_REQUEST, msg)
+
+        callback = state.get('callback')
+        if callback:
+            callback(status=status, actor_id=state.get('actor_id'), port_name=state.get('port_name'),
+                     port_id=state.get('port_id'), peer_node_id=state.get('peer_node_id'),
+                     peer_actor_id=state.get('peer_actor_id'), peer_port_name=state.get('peer_port_name'),
+                     peer_port_id=state.get('peer_port_id'))
+        else:
+            raise Exception(str(status))
+
+    def _invalid_peer_port(self, state):
+        peer_node_id = state.get('peer_node_id')
+        peer_actor_id = state.get('peer_actor_id')
+        peer_port_id = state.get('peer_port_id')
+        peer_port_name = state.get('peer_port_name')
+        if not state['peer_node_id']:
+            msg = "Need peer_node_id (%s), peer_actor_id(%s) and/or peer_port_id(%s)" % (
+                peer_node_id, peer_actor_id, peer_port_id)
+        else:
+            # We miss information on to find the peer port
+            msg = "Need peer_port_name (%s), peer_actor_id(%s) and/or peer_port_id(%s)" % (
+                peer_port_name, peer_actor_id, peer_port_id)
+        status = response.CalvinResponse(response.BAD_REQUEST, msg)
+
+        callback = state.get('callback')
+        if callback:
+            actor_id = state.get('actor_id')
+            port_name = state.get('port_name')
+            port_id = state.get('port_id')
+            callback(status=status, actor_id=actor_id, port_name=port_name, port_id=port_id, peer_node_id=peer_node_id,
+                     peer_actor_id=peer_actor_id, peer_port_name=peer_port_name, peer_port_id=peer_port_id)
+        else:
+            raise Exception(str(status))
 
     def _connect_by_peer_port_id(self, key, value, **state):
         """ Gets called when storage responds with peer port information """
