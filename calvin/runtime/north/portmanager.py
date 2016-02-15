@@ -217,7 +217,7 @@ class PortManager(object):
                 peer_port_id
 
             connect -----------------------------> _connect -> _connect_via_tunnel -> _connected_via_tunnel -!
-                    \> _connect_by_peer_port_id /           \-> _connect_via_local -!
+                    \> _connect_by_peer /           \-> _connect_via_local -!
                     \-> _connect_by_actor_id ---/
         """
         # Collect all parameters into a state that we keep between the chain of callbacks needed to complete a
@@ -277,10 +277,10 @@ class PortManager(object):
         # Still no peer node id? ...
         if state['peer_port_id']:
             # ... but an id of a port lets ask for more info
-            self.node.storage.get_port(state['peer_port_id'], CalvinCB(self._connect_by_peer_port_id, **state))
+            self.node.storage.get_port(state['peer_port_id'], CalvinCB(self._connect_by_peer, **state))
         elif state['peer_actor_id'] and state['peer_port_name']:
             # ... but an id of an actor lets ask for more info
-            self.node.storage.get_actor(state['peer_actor_id'], CalvinCB(self._connect_by_peer_actor_id, **state))
+            self.node.storage.get_actor(state['peer_actor_id'], CalvinCB(self._connect_by_peer, **state))
         else:
             # ... and no info on how to get more info, abort
             self._invalid_peer_port_id(state)
@@ -330,22 +330,8 @@ class PortManager(object):
         else:
             raise Exception(str(status))
 
-    def _connect_by_peer_port_id(self, key, value, **state):
+    def _connect_by_peer(self, key, value, **state):
         """ Gets called when storage responds with peer port information """
-        _log.analyze(self.node.id, "+", {k: state[k] for k in state.keys() if k != 'callback'},
-                     peer_node_id=state['peer_node_id'], tb=True)
-        if not isinstance(value, dict):
-            return self._invalid_storage_return_value(state, value)
-
-        if not state['peer_node_id'] and 'node_id' in value and value['node_id']:
-            state['peer_node_id'] = value['node_id']
-        else:
-            return self._invalid_storage_return_value(state, value)
-
-        self._connect(**state)
-
-    def _connect_by_peer_actor_id(self, key, value, **state):
-        """ Gets called when storage responds with peer actor information"""
         _log.analyze(self.node.id, "+", {k: state[k] for k in state.keys() if k != 'callback'},
                      peer_node_id=state['peer_node_id'], tb=True)
         if not isinstance(value, dict):
@@ -458,7 +444,7 @@ class PortManager(object):
                 # Maybe it is on another node now lets retry and lookup the port
                 state['peer_node_id'] = None
                 state['retries'] += 1
-                self.node.storage.get_port(state['peer_port_id'], CalvinCB(self._connect_by_peer_port_id, **state))
+                self.node.storage.get_port(state['peer_port_id'], CalvinCB(self._connect_by_peer, **state))
                 return None
             if state['callback']:
                 state['callback'](status=response.CalvinResponse(response.NOT_FOUND), **state)
