@@ -40,6 +40,25 @@ def is_component(name, ns):
     return name.find(':', length) > -1
 
 
+def group_components(names, ns):
+    components = {}
+    for name in names:
+        if is_component(name, ns):
+            component = component_name(name, ns)
+            if component in components:
+                components[component].append(name)
+            else:
+                components[component] = [name]
+    return components
+
+
+def get_actor_req(deploy_info, ns, actor_name):
+        name = component_name(actor_name, ns) or actor_name
+        name = name.split(':', 1)[1] if ns else name
+        return deploy_info['requirements'][name] if (deploy_info and 'requirements' in deploy_info and
+                                                     name in deploy_info['requirements']) else []
+
+
 class Application(object):
 
     """ Application class """
@@ -117,20 +136,10 @@ class Application(object):
         return sum([len(a) for a in self.node_info.itervalues()]) == len(self.actors)
 
     def group_components(self):
-        self.components = {}
-        for name in self.actors.values():
-            if is_component(name, self.ns):
-                component = component_name(name, self.ns)
-                if component in self.components:
-                    self.components[component].append(name)
-                else:
-                    self.components[component] = [name]
+        self.components = group_components(self.actors.values(), self.ns)
 
     def get_req(self, actor_name):
-        name = component_name(actor_name, self.ns) or actor_name
-        name = name.split(':', 1)[1] if self.ns else name
-        return self.deploy_info['requirements'][name] if (self.deploy_info and 'requirements' in self.deploy_info and
-                                                          name in self.deploy_info['requirements']) else None
+        return get_actor_req(self.deploy_info, self.ns, actor_name)
 
 
 class AppManager(object):
@@ -589,22 +598,11 @@ class Deployer(object):
             self.ns = ""
         self.group_components()
 
-    # TODO Make deployer use the Application class group_components, component_name and get_req
     def group_components(self):
-        self.components = {}
-        for name in self.deployable['actors']:
-            if is_component(name, self.ns):
-                component = component_name(name, self.ns)
-                if component in self.components:
-                    self.components[component].append(name)
-                else:
-                    self.components[component] = [name]
+        self.components = group_components(self.deployable['actors'], self.ns)
 
     def get_req(self, actor_name):
-        name = component_name(actor_name, self.ns) or actor_name
-        name = name.split(':', 1)[1] if self.ns else name
-        return self.deploy_info['requirements'][name] if (self.deploy_info and 'requirements' in self.deploy_info and
-                                                          name in self.deploy_info['requirements']) else []
+        return get_actor_req(self.deploy_info, self.ns, actor_name)
 
     def instantiate(self, actor_name, actor_type, argd, signature=None):
         """
