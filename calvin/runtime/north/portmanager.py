@@ -27,6 +27,7 @@ _log = calvinlogger.get_logger(__name__)
 TOKEN_CMD = 'TOKEN'
 TOKEN_REPLY_CMD = 'TOKEN_REPLY'
 ABORT = 'ABORT'
+MAX_CONNECTION_RETRIES = 3
 
 
 class NoSuchPortException(Exception):
@@ -442,31 +443,11 @@ class PortManager(object):
         """ Gets called when remote responds to our request for port connection """
         _log.analyze(self.node.id, "+ " + str(reply), {k: state[k] for k in state.keys() if k != 'callback'},
                      peer_node_id=state['peer_node_id'], tb=True)
-        if reply in [response.BAD_REQUEST, response.NOT_FOUND, response.GATEWAY_TIMEOUT]:
-            # Other end did not accept our port connection request
-            if state['retries'] < 2 and state['peer_node_id']:
-                # Maybe it is on another node now lets retry and lookup the port
-                state['peer_node_id'] = None
-                state['retries'] += 1
-                self.node.storage.get_port(state['peer_port_id'], CalvinCB(self._connect_by_peer, **state))
-                return None
-            if state['callback']:
-                state['callback'](status=response.CalvinResponse(response.NOT_FOUND), **state)
-                return None
 
+        if reply in [response.BAD_REQUEST, response.NOT_FOUND, response.GATEWAY_TIMEOUT]:
+            return self._connection_request_rejected(self, state)
         if reply == response.GONE:
-            # Other end did not accept our port connection request, likely due to they have not got the message
-            # about the tunnel in time
-            _log.analyze(self.node.id, "+ RETRY", {k: state[k] for k in state.keys() if k != 'callback'}, peer_node_id=state['peer_node_id'])
-            if state['retries']<3:
-                state['retries'] += 1
-                # Status here just indicate that we should have a tunnel
-                self._connect_via_tunnel(status=response.CalvinResponse(True), **state)
-                return None
-            else:
-                if state['callback']:
-                    state['callback'](status=response.CalvinResponse(False), **state)
-                return None
+            return self._connection_gone(state)
 
         # Set up the port's endpoint
         tunnel = self.tunnels[state['peer_node_id']]
@@ -480,15 +461,34 @@ class PortManager(object):
 
         self._add_to_storage(port)
 
+    def _connection_request_rejected(self, state):
+        """Other end did not accept our port connection request"""
+        if state['retries'] < MAX_CONNECTION_RETRIES and state['peer_node_id']:
+            # Maybe it is on another node now lets retry and lookup the port
+            state['peer_node_id'] = None
+            state['retries'] += 1
+            self.node.storage.get_port(state['peer_port_id'], CalvinCB(self._connect_by_peer, **state))
+        elif state['callback']:
+            state['callback'](status=response.CalvinResponse(response.NOT_FOUND), **state)
+
+    def _connection_gone(self, state):
+        """Other end did not accept our port connection request, likely due to they have not got the message
+        about the tunnel in time
+        """
+        _log.analyze(self.node.id, "+ RETRY", {k: state[k] for k in state.keys() if k != 'callback'},
+                     peer_node_id=state['peer_node_id'])
+        if state['retries'] < MAX_CONNECTION_RETRIES:
+            state['retries'] += 1
+            # Status here just indicate that we should have a tunnel
+            self._connect_via_tunnel(status=response.CalvinResponse(True), **state)
+        elif state['callback']:
+            state['callback'](status=response.CalvinResponse(False), **state)
+
     def _connect_via_local(self, state):
         """ Both connecting ports are local, just connect them """
         _log.analyze(self.node.id, "+ LOCAL", {k: state[k] for k in state.keys() if k != 'callback'},
                      peer_node_id=state['peer_node_id'])
-        port1 = self._get_local_port(state['actor_id'], state['port_name'], state['port_dir'], state['port_id'])
-        port2 = self._get_local_port(state['peer_actor_id'], state['peer_port_name'], state['peer_port_dir'],
-                                     state['peer_port_id'])
-        # Local connect wants the first port to be an inport
-        inport, outport = (port1, port2) if isinstance(port1, InPort) else (port2, port1)
+        (inport, outport) = self._get_ports_to_connect(state)
 
         _log.analyze(self.node.id, "+", {})
         ein = endpoint.LocalInEndpoint(inport, outport)
@@ -502,6 +502,14 @@ class PortManager(object):
 
         if state['callback']:
             state['callback'](status=response.CalvinResponse(True), **state)
+
+    def _get_ports_to_connect(self, state):
+        port1 = self._get_local_port(state['actor_id'], state['port_name'], state['port_dir'], state['port_id'])
+        port2 = self._get_local_port(state['peer_actor_id'], state['peer_port_name'], state['peer_port_dir'],
+                                     state['peer_port_id'])
+        # Local connect wants the first port to be an inport
+        inport, outport = (port1, port2) if isinstance(port1, InPort) else (port2, port1)
+        return inport, outport
 
     def _add_to_storage(self, port):
         self.node.storage.add_port(port, self.node.id, port.owner.id, port.direction)
@@ -709,9 +717,9 @@ class PortManager(object):
             _log.analyze(self.node.id, "+ SHADOW PORT?",
                          {'actor_id': actor_id, 'port_name': port_name, 'port_dir': port_dir, 'port_id': port_id})
             actor = self.node.am.actors.get(actor_id, None)
-            _log.debug("SHADOW ACTOR: %s, %s, %s" % (("SHADOW" if isinstance(actor, ShadowActor) else "NOT SHADOW"),
-                       type(actor), actor))
-            if isinstance(actor, ShadowActor):
+            is_shadow = isinstance(actor, ShadowActor)
+            _log.debug("SHADOW ACTOR: %s, %s, %s" % (("SHADOW" if is_shadow else "NOT SHADOW"), type(actor), actor))
+            if is_shadow:
                 port = actor.create_shadow_port(port_name, port_dir, port_id)
                 _log.analyze(self.node.id, "+ CREATED SHADOW PORT",
                              {'actor_id': actor_id, 'port_name': port_name, 'port_dir': port_dir, 'port_id': port.id if port else None})
