@@ -27,6 +27,8 @@ from calvin.runtime.south.plugins.async import async
 
 _log = calvinlogger.get_logger(__name__)
 
+MAX_ACTOR_DELETE_RETRIES = 10
+
 
 def component_name(name, ns):
     if is_component(name, ns):
@@ -203,8 +205,16 @@ class AppManager(object):
         except:
             pass
         application.clear_node_info()
+        self._destroy_actors(application)
+
+        if not application.actors or application.complete_node_info():
+            # Actors list already empty, all actors were local or the storage was calling the cb in-loop
+            _log.analyze(self._node.id, "+ DONE", {})
+            self._destroy_final(application)
+
+    def _destroy_actors(self, application):
         # Loop over copy of app's actors, since modified inside loop
-        for actor_id in application.actors.keys()[:]:
+        for actor_id in application.actors.keys():
             if actor_id in self._node.am.list_actors():
                 _log.analyze(self._node.id, "+ LOCAL ACTOR", {'actor_id': actor_id})
                 # TODO: Check if it went ok
@@ -214,11 +224,6 @@ class AppManager(object):
                 _log.analyze(self._node.id, "+ REMOTE ACTOR", {'actor_id': actor_id})
                 self.storage.get_actor(actor_id, CalvinCB(func=self._destroy_actor_cb, application=application))
 
-        if not application.actors or application.complete_node_info():
-            # Actors list already empty, all actors were local or the storage was calling the cb in-loop
-            _log.analyze(self._node.id, "+ DONE", {})
-            self._destroy_final(application)
-
     def _destroy_actor_cb(self, key, value, application, retries=0):
         """ Get actor callback """
         _log.analyze(self._node.id, "+", {'actor_id': key, 'value': value, 'retries': retries})
@@ -226,7 +231,7 @@ class AppManager(object):
         if value and 'node_id' in value:
             application.update_node_info(value['node_id'], key)
         else:
-            if retries < 10:
+            if retries < MAX_ACTOR_DELETE_RETRIES:
                 # FIXME add backoff time
                 _log.analyze(self._node.id, "+ RETRY", {'actor_id': key, 'value': value, 'retries': retries})
                 self.storage.get_actor(key, CalvinCB(func=self._destroy_actor_cb, application=application,
