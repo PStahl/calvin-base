@@ -359,45 +359,49 @@ class PortManager(object):
                      peer_node_id=state['peer_node_id'], tb=True)
         # Local connect
         if self.node.id == state['peer_node_id']:
-            _log.analyze(self.node.id, "+ LOCAL", {k: state[k] for k in state.keys() if k != 'callback'}, peer_node_id=state['peer_node_id'])
-            port1 = self._get_local_port(state['actor_id'], state['port_name'], state['port_dir'], state['port_id'])
-            port2 = self._get_local_port(state['peer_actor_id'], state['peer_port_name'], state['peer_port_dir'], state['peer_port_id'])
-            # Local connect wants the first port to be an inport
-            inport, outport = (port1, port2) if isinstance(port1, InPort) else (port2, port1)
-            self._connect_via_local(inport, outport)
-            if state['callback']:
-                state['callback'](status=response.CalvinResponse(True), **state)
-            return None
+            return self._connect_via_local(state)
 
         # Remote connection
         # TODO Currently we only have support for setting up a remote connection via tunnel
-        tunnel = None
-        if not state['peer_node_id'] in self.tunnels.iterkeys():
-            # No tunnel to peer, get one first
-            _log.analyze(self.node.id, "+ GET TUNNEL", {k: state[k] for k in state.keys() if k != 'callback'}, peer_node_id=state['peer_node_id'])
-            tunnel = self.proto.tunnel_new(state['peer_node_id'], 'token', {})
-            tunnel.register_tunnel_down(CalvinCB(self.tunnel_down, tunnel))
-            tunnel.register_tunnel_up(CalvinCB(self.tunnel_up, tunnel))
-            tunnel.register_recv(CalvinCB(self.tunnel_recv_handler, tunnel))
-            self.tunnels[state['peer_node_id']] = tunnel
-        else:
-            tunnel = self.tunnels[state['peer_node_id']]
+        tunnel = self._get_tunnel(state)
 
         if tunnel.status == CalvinTunnel.STATUS.PENDING:
-            if not state['peer_node_id'] in self.pending_tunnels:
-                self.pending_tunnels[state['peer_node_id']] = []
-            # call _connect_via_tunnel when we get the response of the tunnel
-            self.pending_tunnels[state['peer_node_id']].append(CalvinCB(self._connect_via_tunnel, **state))
-            return
+            return self._connect_via_pending_tunnel(state)
         elif tunnel.status == CalvinTunnel.STATUS.TERMINATED:
-            # TODO should we retry at this level?
-            if state['callback']:
-                state['callback'](status=response.CalvinResponse(response.INTERNAL_ERROR), **state)
-            return
+            return self._tunnel_terminated(state)
 
         _log.analyze(self.node.id, "+ HAD TUNNEL", dict({k: state[k] for k in state.keys() if k != 'callback'},
                      tunnel_status=self.tunnels[state['peer_node_id']].status), peer_node_id=state['peer_node_id'])
         self._connect_via_tunnel(status=response.CalvinResponse(True), **state)
+
+    def _get_tunnel(self, state):
+        peer_node_id = state['peer_node_id']
+        if peer_node_id in self.tunnels.iterkeys():
+            return self.tunnels[peer_node_id]
+
+        # No tunnel to peer, get one first
+        _log.analyze(self.node.id, "+ GET TUNNEL", {k: state[k] for k in state.keys() if k != 'callback'},
+                     peer_node_id=state['peer_node_id'])
+        tunnel = self.proto.tunnel_new(state['peer_node_id'], 'token', {})
+        tunnel.register_tunnel_down(CalvinCB(self.tunnel_down, tunnel))
+        tunnel.register_tunnel_up(CalvinCB(self.tunnel_up, tunnel))
+        tunnel.register_recv(CalvinCB(self.tunnel_recv_handler, tunnel))
+        self.tunnels[state['peer_node_id']] = tunnel
+
+        return tunnel
+
+    def _tunnel_terminated(self, state):
+        # TODO should we retry at this level?
+        if state['callback']:
+            state['callback'](status=response.CalvinResponse(response.INTERNAL_ERROR), **state)
+
+    def _connect_via_pending_tunnel(self, state):
+        if not state['peer_node_id'] in self.pending_tunnels:
+            self.pending_tunnels[state['peer_node_id']] = []
+
+        # call _connect_via_tunnel when we get the response of the tunnel
+        self.pending_tunnels[state['peer_node_id']].append(CalvinCB(self._connect_via_tunnel, **state))
+        return
 
     def _connect_via_tunnel(self, status=None, **state):
         """ All information and hopefully (status OK) a tunnel to the peer is available for a port connect"""
@@ -476,8 +480,16 @@ class PortManager(object):
 
         self._add_to_storage(port)
 
-    def _connect_via_local(self, inport, outport):
+    def _connect_via_local(self, state):
         """ Both connecting ports are local, just connect them """
+        _log.analyze(self.node.id, "+ LOCAL", {k: state[k] for k in state.keys() if k != 'callback'},
+                     peer_node_id=state['peer_node_id'])
+        port1 = self._get_local_port(state['actor_id'], state['port_name'], state['port_dir'], state['port_id'])
+        port2 = self._get_local_port(state['peer_actor_id'], state['peer_port_name'], state['peer_port_dir'],
+                                     state['peer_port_id'])
+        # Local connect wants the first port to be an inport
+        inport, outport = (port1, port2) if isinstance(port1, InPort) else (port2, port1)
+
         _log.analyze(self.node.id, "+", {})
         ein = endpoint.LocalInEndpoint(inport, outport)
         eout = endpoint.LocalOutEndpoint(outport, inport)
@@ -487,6 +499,9 @@ class PortManager(object):
 
         self._add_to_storage(inport)
         self._add_to_storage(outport)
+
+        if state['callback']:
+            state['callback'](status=response.CalvinResponse(True), **state)
 
     def _add_to_storage(self, port):
         self.node.storage.add_port(port, self.node.id, port.owner.id, port.direction)
