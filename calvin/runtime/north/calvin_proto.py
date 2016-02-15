@@ -398,45 +398,21 @@ class CalvinProto(CalvinCBClass):
     def tunnel_new_handler(self, payload):
         """ Create a new tunnel (response side) """
         tunnel = self._get_tunnel(payload['from_rt_uuid'], payload['type'])
-        ok = False
         _log.analyze(self.rt_id, "+", payload, peer_node_id=payload['from_rt_uuid'])
         if tunnel:
-            _log.analyze(self.rt_id, "+ PENDING", payload, peer_node_id=payload['from_rt_uuid'])
-            # Got tunnel new request while we already have one pending
-            # it is not allowed to send new request while a tunnel is working
-            if tunnel.status != CalvinTunnel.STATUS.WORKING:
-                ok = True
-                # The one with lowest tunnel id loose
-                if tunnel.id < payload['tunnel_id']:
-                    # Our tunnel has lowest id, change our tunnels id
-                    # update status and call proper callbacks
-                    # but send tunnel reply first, to get everything in order
-                    value = response.CalvinResponse(ok, data={'tunnel_id': payload['tunnel_id']}).encode()
-                    self._send_reply(payload, value)
-                    tunnel._setup_ack(response.CalvinResponse(True, data={'tunnel_id': payload['tunnel_id']}))
-                    _log.analyze(self.rt_id, "+ CHANGE ID", payload, peer_node_id=payload['from_rt_uuid'])
-                else:
-                    # Our tunnel has highest id, keep our id
-                    # update status and call proper callbacks
-                    # but send tunnel reply first, to get everything in order
-                    value = response.CalvinResponse(ok, data={'tunnel_id': tunnel.id}).encode()
-                    self._send_reply(payload, value)
-                    tunnel._setup_ack(response.CalvinResponse(True, data={'tunnel_id': tunnel.id}))
-                    _log.analyze(self.rt_id, "+ KEEP ID", payload, peer_node_id=payload['from_rt_uuid'])
-            else:
-                # FIXME if this happens need to decide what to do
-                _log.analyze(self.rt_id, "+ DROP FIXME", payload, peer_node_id=payload['from_rt_uuid'])
-            return
-        else:
-            # No simultaneous tunnel requests, lets create it...
-            tunnel = CalvinTunnel(self.network.links, self.tunnels, payload['from_rt_uuid'], payload['type'],
-                                  payload['policy'], rt_id=self.node.id, id=payload['tunnel_id'])
-            _log.analyze(self.rt_id, "+ NO SMASH", payload, peer_node_id=payload['from_rt_uuid'])
-            try:
-                # ... and see if the handler wants it
-                ok = self.tunnel_handlers[payload['type']](tunnel)
-            except:
-                pass
+            return self._tunnel_new_handler(tunnel, payload)
+
+        # No simultaneous tunnel requests, lets create it...
+        tunnel = CalvinTunnel(self.network.links, self.tunnels, payload['from_rt_uuid'], payload['type'],
+                              payload['policy'], rt_id=self.node.id, id=payload['tunnel_id'])
+        _log.analyze(self.rt_id, "+ NO SMASH", payload, peer_node_id=payload['from_rt_uuid'])
+        ok = False
+        try:
+            # ... and see if the handler wants it
+            ok = self.tunnel_handlers[payload['type']](tunnel)
+        except:
+            pass
+
         # Send the response
         value = response.CalvinResponse(ok, data={'tunnel_id': tunnel.id}).encode()
         self._send_reply(payload, value)
@@ -444,6 +420,32 @@ class CalvinProto(CalvinCBClass):
         # If handler did not want it close it again
         if not ok:
             tunnel.close(local_only=True)
+
+    def _tunnel_new_handler(self, tunnel, payload):
+        """Got tunnel new request while we already have one pending it is not allowed to send new request while a
+        tunnel is working
+        """
+        _log.analyze(self.rt_id, "+ PENDING", payload, peer_node_id=payload['from_rt_uuid'])
+        if tunnel.status == CalvinTunnel.STATUS.WORKING:
+            # FIXME if this happens need to decide what to do
+            _log.analyze(self.rt_id, "+ DROP FIXME", payload, peer_node_id=payload['from_rt_uuid'])
+            return
+
+        # The one with lowest tunnel id loose
+        if tunnel.id < payload['tunnel_id']:
+            # Our tunnel has lowest id, change our tunnels id update status and call proper callbacks
+            # but send tunnel reply first, to get everything in order
+            tunnel_id = payload['tunnel_id']
+            _log.analyze(self.rt_id, "+ CHANGE ID", payload, peer_node_id=payload['from_rt_uuid'])
+        else:
+            # Our tunnel has highest id, keep our id update status and call proper callbacks
+            # but send tunnel reply first, to get everything in order
+            tunnel_id = tunnel.id
+            _log.analyze(self.rt_id, "+ KEEP ID", payload, peer_node_id=payload['from_rt_uuid'])
+
+        value = response.CalvinResponse(True, data={'tunnel_id': tunnel_id}).encode()
+        self._send_reply(payload, value)
+        tunnel._setup_ack(response.CalvinResponse(True, data={'tunnel_id': tunnel_id}))
 
     def tunnel_destroy(self, to_rt_uuid, tunnel_uuid):
         """ Destroy a tunnel (request side) """
