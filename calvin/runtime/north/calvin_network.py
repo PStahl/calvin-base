@@ -24,12 +24,14 @@ import calvin.utilities.calvinresponse as response
 from calvin.runtime.south.plugins.async import async
 from calvin.utilities import calvinlogger
 from calvin.utilities import calvinconfig
+
 _log = calvinlogger.get_logger(__name__)
 _conf = calvinconfig.get()
 
 # FIXME should be read from calvin config
 TRANSPORT_PLUGIN_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), *['south', 'plugins', 'transports'])
 TRANSPORT_PLUGIN_NS = "calvin.runtime.south.plugins.transports"
+
 
 class CalvinLink(object):
     """ CalvinLink class manage one RT to RT link between
@@ -207,32 +209,43 @@ class CalvinNetwork(object):
             corresponding_peer_ids = [None] * len(uris)
 
         for uri, peer_id in zip(uris, corresponding_peer_ids):
-            if not (uri in self.pending_joins or peer_id in self.pending_joins_by_id or peer_id in self.links):
-                # No simultaneous join detected
-                schema = uri.split(":", 1)[0]
-                _log.analyze(self.node.id, "+", {'uri': uri, 'peer_id': peer_id, 'schema': schema, 'transports': self.transports.keys()}, peer_node_id=peer_id)
-                if schema in self.transports.keys():
-                    # store we have a pending join and its callback
-                    if peer_id:
-                        self.pending_joins_by_id[peer_id] = uri
-                    if callback:
-                        self.pending_joins[uri] = [callback]
-                    # Ask the transport plugin to do the join
-                    _log.analyze(self.node.id, "+ TRANSPORT", {'uri': uri, 'peer_id': peer_id}, peer_node_id=peer_id)
-                    self.transports[schema].join(uri)
+            if self._simultaneous_joins(uri, peer_id):
+                self._handle_simultaneous_join(callback, uri, peer_id)
             else:
-                # We have simultaneous joins
-                _log.analyze(self.node.id, "+ SIMULTANEOUS", {'uri': uri, 'peer_id': peer_id}, peer_node_id=peer_id)
-                if callback:
-                    if peer_id in self.links:
-                        # Link was already established, then need to call the callback now
-                        callback(status=response.CalvinResponse(True), uri=uri)
-                        continue
-                    # Otherwise also want to be called when the ongoing link setup finishes
-                    if uri in self.pending_joins:
-                        self.pending_joins[uri].append(callback)
-                    else:
-                        self.pending_joins[uri] = [callback]
+                self._handle_non_simultaneous_join(callback, uri, peer_id)
+
+    def _simultaneous_joins(self, uri, peer_id):
+        return uri in self.pending_joins or peer_id in self.pending_joins_by_id or peer_id in self.links
+
+    def _handle_simultaenous_join(self, callback, uri, peer_id):
+        _log.analyze(self.node.id, "+ SIMULTANEOUS", {'uri': uri, 'peer_id': peer_id}, peer_node_id=peer_id)
+        if not callback:
+            return
+
+        if peer_id in self.links:
+            # Link was already established, then need to call the callback now
+            callback(status=response.CalvinResponse(True), uri=uri)
+            return
+
+        # Otherwise also want to be called when the ongoing link setup finishes
+        if uri in self.pending_joins:
+            self.pending_joins[uri].append(callback)
+        else:
+            self.pending_joins[uri] = [callback]
+
+    def _handle_non_simultaneous_join(self, callback, uri, peer_id):
+        schema = uri.split(":", 1)[0]
+        _log.analyze(self.node.id, "+", {'uri': uri, 'peer_id': peer_id, 'schema': schema, 'transports': self.transports.keys()},
+                     peer_node_id=peer_id)
+        if schema in self.transports.keys():
+            # store we have a pending join and its callback
+            if peer_id:
+                self.pending_joins_by_id[peer_id] = uri
+            if callback:
+                self.pending_joins[uri] = [callback]
+            # Ask the transport plugin to do the join
+            _log.analyze(self.node.id, "+ TRANSPORT", {'uri': uri, 'peer_id': peer_id}, peer_node_id=peer_id)
+            self.transports[schema].join(uri)
 
     def join_finished(self, tp_link, peer_id, uri, is_orginator):
         """ Peer join is (not) accepted, called by transport plugin.
