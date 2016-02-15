@@ -519,45 +519,54 @@ class PortManager(object):
 
             disconnect -*> _disconnect_port -*> _disconnected_port (-*> _disconnecting_actor_cb) -> !
         """
-        port_ids = []
         if actor_id and not (port_id or port_name or port_dir):
-            # We disconnect all ports on an actor
+            self._disconnect_all_actor_ports(callback, actor_id, port_name, port_dir, port_id)
+        else:
+            self._disconnect_actor_port(callback, actor_id, port_name, port_dir, port_id)
+
+    def _disconnect_all_actor_ports(self, callback, actor_id, port_name, port_dir, port_id):
+        port_ids = []
+        # We disconnect all ports on an actor
+        if actor_id not in self.node.am.actors:
+            status = response.CalvinResponse(response.NOT_FOUND, "Actor %s must be local" % (actor_id))
+            if callback:
+                callback(status=status, actor_id=actor_id, port_name=port_name, port_id=port_id)
+                return
+            else:
+                raise Exception(str(status))
+
+        actor = self.node.am.actors[actor_id]
+        port_ids.extend([p.id for p in actor.inports.itervalues()])
+        port_ids.extend([p.id for p in actor.outports.itervalues()])
+        # Need to collect all callbacks into one
+        if callback:
+            callback = CalvinCB(self._disconnecting_actor_cb, _callback=callback, port_ids=port_ids)
+
+        self._disconnect_ports(port_ids, callback)
+
+    def _disconnect_actor_port(self, callback, actor_id, port_name, port_dir, port_id):
+        port_ids = []
+        # Just one port to disconnect
+        if port_id:
+            port_ids.append(port_id)
+        else:
+            # Awkward but lets get the port id from name etc so that the rest can loop over port ids
             try:
-                actor = self.node.am.actors[actor_id]
-            except:
-                # actor not found
-                status = response.CalvinResponse(response.NOT_FOUND, "Actor %s must be local" % (actor_id))
+                port = self._get_local_port(actor_id, port_name, port_dir, port_id)
+            except NoSuchPortException:
+                status = response.CalvinResponse(response.NOT_FOUND, "Port %s on actor %s must be local" % (port_name if port_name else port_id, actor_id if actor_id else "some"))
                 if callback:
                     callback(status=status, actor_id=actor_id, port_name=port_name, port_id=port_id)
                     return
                 else:
                     raise Exception(str(status))
             else:
-                port_ids.extend([p.id for p in actor.inports.itervalues()])
-                port_ids.extend([p.id for p in actor.outports.itervalues()])
-                # Need to collect all callbacks into one
-                if callback:
-                    callback = CalvinCB(self._disconnecting_actor_cb, _callback=callback, port_ids=port_ids)
-        else:
-            # Just one port to disconnect
-            if port_id:
-                port_ids.append(port_id)
-            else:
-                # Awkward but lets get the port id from name etc so that the rest can loop over port ids
-                try:
-                    port = self._get_local_port(actor_id, port_name, port_dir, port_id)
-                except NoSuchPortException:
-                    # not local
-                    status = response.CalvinResponse(response.NOT_FOUND, "Port %s on actor %s must be local" % (port_name if port_name else port_id, actor_id if actor_id else "some"))
-                    if callback:
-                        callback(status=status, actor_id=actor_id, port_name=port_name, port_id=port_id)
-                        return
-                    else:
-                        raise Exception(str(status))
-                else:
-                    # Found locally
-                    port_ids.append(port.id)
+                # Found locally
+                port_ids.append(port.id)
 
+        self._disconnect_ports(port_ids, callback)
+
+    def _disconnect_ports(self, port_ids, callback):
         _log.analyze(self.node.id, "+", {'port_ids': port_ids})
 
         # Run over copy of list of ports since modified inside the loop
