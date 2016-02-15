@@ -165,9 +165,8 @@ class CalvinNetwork(object):
                                                                      'data_received': [self.recv_handler],
                                                                      'peer_disconnected': [CalvinCB(self.peer_disconnected)]},
                                                                     schemas, formats)
-            except:
-                _log.debug("Could not register transport plugin %s" % (m,))
-                continue
+            except Exception as e:
+                _log.error("Could not register transport plugin {}: {}".format(m, e))
             if schema_objects:
                 _log.debug("Register transport plugin %s" % (m,))
                 # Add them to the list - currently only one module can handle one schema
