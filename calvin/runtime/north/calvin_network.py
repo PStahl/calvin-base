@@ -235,7 +235,8 @@ class CalvinNetwork(object):
 
     def _handle_non_simultaneous_join(self, callback, uri, peer_id):
         schema = uri.split(":", 1)[0]
-        _log.analyze(self.node.id, "+", {'uri': uri, 'peer_id': peer_id, 'schema': schema, 'transports': self.transports.keys()},
+        _log.analyze(self.node.id, "+",
+                     {'uri': uri, 'peer_id': peer_id, 'schema': schema, 'transports': self.transports.keys()},
                      peer_node_id=peer_id)
         if schema in self.transports.keys():
             # store we have a pending join and its callback
@@ -260,62 +261,84 @@ class CalvinNetwork(object):
         """
         # while a link is pending it is the responsibility of the transport layer, since
         # higher layers don't have any use for it anyway
-        _log.analyze(self.node.id, "+", {'uri': uri, 'peer_id': peer_id,
-                                         'pending_joins': self.pending_joins,
-                                         'pending_joins_by_id': self.pending_joins_by_id},
-                                         peer_node_id=peer_id, tb=True)
-        if tp_link is None:
-            # This is a failed join lets send it upwards
-            if uri in self.pending_joins:
-                cbs = self.pending_joins.pop(uri)
-                if cbs:
-                    for cb in cbs:
-                        cb(status=response.CalvinResponse(response.SERVICE_UNAVAILABLE), uri=uri, peer_node_id=peer_id)
-            return
+        _log.analyze(self.node.id, "+",
+                     {'uri': uri,
+                      'peer_id': peer_id,
+                      'pending_joins': self.pending_joins,
+                      'pending_joins_by_id': self.pending_joins_by_id},
+                     peer_node_id=peer_id, tb=True)
+
+        if not tp_link:
+            return self._service_unavailable(uri, peer_id)
+
         # Only support for one RT to RT communication link per peer
         if peer_id in self.links:
             # Likely simultaneous join requests, use the one requested by the node with highest id
             if is_orginator and self.node.id > peer_id:
-                # We requested it and we have highest node id, hence the one in links is the peer's and we replace it
-                _log.analyze(self.node.id, "+ REPLACE ORGINATOR", {'uri': uri, 'peer_id': peer_id}, peer_node_id=peer_id)
-                self.links[peer_id] = CalvinLink(self.node.id, peer_id, tp_link, self.links[peer_id])
+                self._replace_originator(tp_link, uri, peer_id)
             elif is_orginator and self.node.id < peer_id:
-                # We requested it and peer have highest node id, hence the one in links is peer's and we close this new
-                _log.analyze(self.node.id, "+ DROP ORGINATOR", {'uri': uri, 'peer_id': peer_id}, peer_node_id=peer_id)
-                tp_link.disconnect()
+                self._drop_originator(tp_link, uri, peer_id)
             elif not is_orginator and self.node.id > peer_id:
-                # Peer requested it and we have highest node id, hence the one in links is ours and we close this new
-                _log.analyze(self.node.id, "+ DROP", {'uri': uri, 'peer_id': peer_id}, peer_node_id=peer_id)
-                tp_link.disconnect()
+                self._drop_peer_link(tp_link, uri, peer_id)
             elif not is_orginator and self.node.id < peer_id:
-                # Peer requested it and peer have highest node id, hence the one in links is ours and we replace it
-                _log.analyze(self.node.id, "+ REPLACE", {'uri': uri, 'peer_id': peer_id}, peer_node_id=peer_id)
-                self.links[peer_id] = CalvinLink(self.node.id, peer_id, tp_link, self.links[peer_id])
+                self._replace_peer_link(tp_link, uri, peer_id)
         else:
-            # No simultaneous join detected, just add the link
-            _log.analyze(self.node.id, "+ INSERT", {'uri': uri, 'peer_id': peer_id}, peer_node_id=peer_id, tb=True)
-            self.links[peer_id] = CalvinLink(self.node.id, peer_id, tp_link)
+            self._add_peer_link(tp_link, uri, peer_id)
 
         # Find and call any callbacks registered for the uri or peer id
         _log.debug("%s: peer_id: %s, uri: %s\npending_joins_by_id: %s\npending_joins: %s" % (self.node.id, peer_id,
-                                                                                         uri,
-                                                                                         self.pending_joins_by_id,
-                                                                                         self.pending_joins))
+                                                                                             uri,
+                                                                                             self.pending_joins_by_id,
+                                                                                             self.pending_joins))
+
+        self._send_response_to_pending_joins(uri, peer_id)
+
+    def _send_response_to_pending_joins(self, uri, peer_id):
         if peer_id in self.pending_joins_by_id:
             peer_uri = self.pending_joins_by_id.pop(peer_id)
             if peer_uri in self.pending_joins:
-                cbs = self.pending_joins.pop(peer_uri)
-                if cbs:
-                    for cb in cbs:
-                        cb(status=response.CalvinResponse(True), uri=peer_uri, peer_node_id=peer_id)
+                cbs = self.pending_joins.pop(peer_uri) or []
+                for cb in cbs:
+                    cb(status=response.CalvinResponse(True), uri=peer_uri, peer_node_id=peer_id)
 
         if uri in self.pending_joins:
-            cbs = self.pending_joins.pop(uri)
-            if cbs:
-                for cb in cbs:
-                    cb(status=response.CalvinResponse(True), uri=uri, peer_node_id=peer_id)
+            cbs = self.pending_joins.pop(uri) or []
+            for cb in cbs:
+                cb(status=response.CalvinResponse(True), uri=uri, peer_node_id=peer_id)
 
-        return
+    def _service_unavailable(self, uri, peer_id):
+        # This is a failed join lets send it upwards
+        if uri not in self.pending_joins:
+            return
+
+        cbs = self.pending_joins.pop(uri) or []
+        for cb in cbs:
+            cb(status=response.CalvinResponse(response.SERVICE_UNAVAILABLE), uri=uri, peer_node_id=peer_id)
+
+    def _add_peer_link(self, tp_link, uri, peer_id):
+        # No simultaneous join detected, just add the link
+        _log.analyze(self.node.id, "+ INSERT", {'uri': uri, 'peer_id': peer_id}, peer_node_id=peer_id, tb=True)
+        self.links[peer_id] = CalvinLink(self.node.id, peer_id, tp_link)
+
+    def _replace_originator(self, tp_link, uri, peer_id):
+        """We requested it and we have highest node id, hence the one in links is the peer's and we replace it"""
+        _log.analyze(self.node.id, "+ REPLACE ORGINATOR", {'uri': uri, 'peer_id': peer_id}, peer_node_id=peer_id)
+        self.links[peer_id] = CalvinLink(self.node.id, peer_id, tp_link, self.links[peer_id])
+
+    def _drop_originator(self, tp_link, uri, peer_id):
+        """We requested it and peer have highest node id, hence the one in links is peer's and we close this new"""
+        _log.analyze(self.node.id, "+ DROP ORGINATOR", {'uri': uri, 'peer_id': peer_id}, peer_node_id=peer_id)
+        tp_link.disconnect()
+
+    def _drop_peer_link(self, tp_link, uri, peer_id):
+        """Peer requested it and we have highest node id, hence the one in links is ours and we close this new"""
+        _log.analyze(self.node.id, "+ DROP", {'uri': uri, 'peer_id': peer_id}, peer_node_id=peer_id)
+        tp_link.disconnect()
+
+    def _replace_peer_link(self, tp_link, uri, peer_id):
+        """Peer requested it and peer have highest node id, hence the one in links is ours and we replace it"""
+        _log.analyze(self.node.id, "+ REPLACE", {'uri': uri, 'peer_id': peer_id}, peer_node_id=peer_id)
+        self.links[peer_id] = CalvinLink(self.node.id, peer_id, tp_link, self.links[peer_id])
 
     def link_get(self, peer_id):
         """ Get a link by node id """
@@ -362,9 +385,11 @@ class CalvinNetwork(object):
         return None
 
     def peer_disconnected(self, link, rt_id, reason):
-        _log.analyze(self.node.id, "+", {'reason': reason,
-                                         'links_equal': link == self.links[rt_id].transport if rt_id in self.links else "Gone"},
-                                         peer_node_id=rt_id)
+        param = {
+            'reason': reason,
+            'links_equal': link == self.links[rt_id].transport if rt_id in self.links else "Gone"
+        }
+        _log.analyze(self.node.id, "+", param, peer_node_id=rt_id)
         if rt_id in self.links and link == self.links[rt_id].transport:
             self.link_remove(rt_id)
 
