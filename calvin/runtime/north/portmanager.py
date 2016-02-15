@@ -29,6 +29,10 @@ TOKEN_REPLY_CMD = 'TOKEN_REPLY'
 ABORT = 'ABORT'
 
 
+class NoSuchPortException(Exception):
+    pass
+
+
 class PortManager(object):
     """
     PortManager handles the setup of communication between ports intra- & inter-runtimes
@@ -91,10 +95,14 @@ class PortManager(object):
         """ Gets called when a token arrives on any port """
         try:
             port = self._get_local_port(port_id=payload['peer_port_id'])
+        except NoSuchPortException:
+            self._abort_recv_token(tunnel, payload)
+            return
+
+        try:
             port.endpoint.recv_token(payload)
         except Exception as e:
-            _log.debug("Failed to receive token: {}".format(e))
-            self._abort_recv_token(tunnel, payload)
+            _log.error("Failed to receive token: {}".format(e))
 
     def _abort_recv_token(self, tunnel, payload):
         """Inform other end that it sent token to a port that does not exist on this node or
@@ -114,8 +122,7 @@ class PortManager(object):
         """ Gets called when a token is (N)ACKed for any port """
         try:
             port = self._get_local_port(port_id=payload['port_id'])
-        except Exception as e:
-            _log.debug("Failed to get local port: {}".format(e))
+        except NoSuchPortException:
             return
 
         self._send_reply_to_endpoint(port, payload)
@@ -150,10 +157,9 @@ class PortManager(object):
         try:
             port = self._get_local_port(payload['peer_actor_id'], payload['peer_port_name'], payload['peer_port_dir'],
                                         payload['peer_port_id'])
-        except Exception as e:
+        except NoSuchPortException:
             # We don't have the port
             _log.analyze(self.node.id, "+ PORT NOT FOUND", payload, peer_node_id=payload['from_rt_uuid'])
-            _log.debug("Failed to find port: {}".format(e))
             return response.CalvinResponse(response.NOT_FOUND)
         else:
             if 'tunnel_id' not in payload:
@@ -232,7 +238,7 @@ class PortManager(object):
                      peer_node_id=state['peer_node_id'], tb=True)
         try:
             port = self._get_local_port(actor_id, port_name, port_dir, port_id)
-        except:
+        except NoSuchPortException:
             # not local
             if port_id:
                 status = response.CalvinResponse(response.BAD_REQUEST, "First port %s must be local" % (port_id))
@@ -261,8 +267,8 @@ class PortManager(object):
         if not state['peer_node_id'] and state['peer_port_id']:
             try:
                 self._get_local_port(None, None, None, peer_port_id)
-            except Exception as e:
-                _log.debug("Failed to get local port, peer_port_id: {}".format(peer_port_id))
+            except NoSuchPortException:
+                pass
             else:
                 # Found locally
                 state['peer_node_id'] = self.node.id
@@ -521,7 +527,7 @@ class PortManager(object):
                 # Awkward but lets get the port id from name etc so that the rest can loop over port ids
                 try:
                     port = self._get_local_port(actor_id, port_name, port_dir, port_id)
-                except:
+                except NoSuchPortException:
                     # not local
                     status = response.CalvinResponse(response.NOT_FOUND, "Port %s on actor %s must be local" % (port_name if port_name else port_id, actor_id if actor_id else "some"))
                     if callback:
@@ -550,7 +556,7 @@ class PortManager(object):
         # Check if port actually is local
         try:
             port = self._get_local_port(None, None, None, port_id)
-        except:
+        except NoSuchPortException:
             # not local
             status = response.CalvinResponse(response.NOT_FOUND, "Port %s must be local" % (port_id))
             if callback:
@@ -661,7 +667,7 @@ class PortManager(object):
         try:
             port = self._get_local_port(payload.get('peer_actor_id'), payload.get('peer_port_name'),
                                         payload.get('peer_port_dir'), payload.get('peer_port_id'))
-        except:
+        except NoSuchPortException:
             # We don't have the port
             return response.CalvinResponse(response.NOT_FOUND)
         else:
@@ -703,4 +709,7 @@ class PortManager(object):
                 if port:
                     self.ports[port.id] = port
                     return port
-        raise Exception("Port '%s' not found locally" % (port_id if port_id else str(actor_id) + "/" + str(port_name) + ":" + str(port_dir)))
+
+        err_msg = "Port '{}' not found locally".format(port_id if port_id else "{}/{}:{}".format(actor_id, port_name, port_dir))
+        _log.error(err_msg)
+        raise NoSuchPortException(err_msg)
