@@ -545,7 +545,7 @@ class PortManager(object):
         else:
             # Found locally
             state['port_name'] = port.name
-            state['port_dir'] = "in" if isinstance(port, InPort) else "out"
+            state['port_dir'] = port.direction
             state['actor_id'] = port.owner.id if port.owner else None
 
         port = self.ports[state['port_id']]
@@ -676,8 +676,7 @@ class PortManager(object):
             return self.ports[port_id]
         if port_name and actor_id and port_dir:
             for port in self.ports.itervalues():
-                if (port.name == port_name and port.owner and port.owner.id == actor_id and
-                        isinstance(port, InPort if port_dir == "in" else OutPort)):
+                if port.name == port_name and port.owner and port.owner.id == actor_id and port.direction == port_dir:
                     return port
             # For new shadow actors we create the port
             _log.analyze(self.node.id, "+ SHADOW PORT?",
