@@ -172,6 +172,12 @@ class CalvinProto(CalvinCBClass):
         self.tunnel_handlers = tunnel_handlers if isinstance(tunnel_handlers, dict) else {}
         self.tunnels = {}  # key: peer node id, value: dict with key: tunnel_id, value: tunnel obj
 
+    def _create_reply(self, payload, value):
+        return {'cmd': 'REPLY', 'msg_uuid': payload['msg_uuid'], 'value': value}
+
+    def _send_reply(self, payload, value):
+        self.network.links[payload['from_rt_uuid']].send(self._create_reply(payload, value))
+
     #
     # Reception of incoming payload
     #
@@ -246,8 +252,7 @@ class CalvinProto(CalvinCBClass):
 
     def _actor_new_handler(self, payload, status, **kwargs):
         """ Potentially created actor, reply to requesting node """
-        msg = {'cmd': 'REPLY', 'msg_uuid': payload['msg_uuid'], 'value': status.encode()}
-        self.network.links[payload['from_rt_uuid']].send(msg)
+        self._send_reply(payload, status.encode())
 
     def actor_migrate(self, to_rt_uuid, callback, actor_id, requirements, extend=False, move=False):
         """ Request actor on to_rt_uuid node to migrate accoring to new deployment requirements
@@ -286,8 +291,7 @@ class CalvinProto(CalvinCBClass):
 
     def _actor_migrate_handler(self, payload, status, **kwargs):
         """ Potentially migrated actor, reply to requesting node """
-        msg = {'cmd': 'REPLY', 'msg_uuid': payload['msg_uuid'], 'value': status.encode()}
-        self.network.links[payload['from_rt_uuid']].send(msg)
+        self._send_reply(payload, status.encode())
 
     #### APPS ####
 
@@ -320,8 +324,7 @@ class CalvinProto(CalvinCBClass):
         """ Peer request destruction of app and its actors """
         reply = self.node.app_manager.destroy_request(payload['app_uuid'],
                                                       payload['actor_uuids'] if 'actor_uuids' in payload else [])
-        msg = {'cmd': 'REPLY', 'msg_uuid': payload['msg_uuid'], 'value': reply.encode()}
-        self.network.links[payload['from_rt_uuid']].send(msg)
+        self._send_reply(payload, reply.encode())
 
     #### TUNNELS ####
 
@@ -402,24 +405,16 @@ class CalvinProto(CalvinCBClass):
                     # Our tunnel has lowest id, change our tunnels id
                     # update status and call proper callbacks
                     # but send tunnel reply first, to get everything in order
-                    msg = {
-                        'cmd': 'REPLY',
-                        'msg_uuid': payload['msg_uuid'],
-                        'value': response.CalvinResponse(ok, data={'tunnel_id': payload['tunnel_id']}).encode()
-                    }
-                    self.network.links[payload['from_rt_uuid']].send(msg)
+                    value = response.CalvinResponse(ok, data={'tunnel_id': payload['tunnel_id']}).encode()
+                    self._send_reply(payload, value)
                     tunnel._setup_ack(response.CalvinResponse(True, data={'tunnel_id': payload['tunnel_id']}))
                     _log.analyze(self.rt_id, "+ CHANGE ID", payload, peer_node_id=payload['from_rt_uuid'])
                 else:
                     # Our tunnel has highest id, keep our id
                     # update status and call proper callbacks
                     # but send tunnel reply first, to get everything in order
-                    msg = {
-                        'cmd': 'REPLY',
-                        'msg_uuid': payload['msg_uuid'],
-                        'value': response.CalvinResponse(ok, data={'tunnel_id': tunnel.id}).encode()
-                    }
-                    self.network.links[payload['from_rt_uuid']].send(msg)
+                    value = response.CalvinResponse(ok, data={'tunnel_id': tunnel.id}).encode()
+                    self._send_reply(payload, value)
                     tunnel._setup_ack(response.CalvinResponse(True, data={'tunnel_id': tunnel.id}))
                     _log.analyze(self.rt_id, "+ KEEP ID", payload, peer_node_id=payload['from_rt_uuid'])
             else:
@@ -437,12 +432,8 @@ class CalvinProto(CalvinCBClass):
             except:
                 pass
         # Send the response
-        msg = {
-            'cmd': 'REPLY',
-            'msg_uuid': payload['msg_uuid'],
-            'value': response.CalvinResponse(ok, data={'tunnel_id': tunnel.id}).encode()
-        }
-        self.network.links[payload['from_rt_uuid']].send(msg)
+        value = response.CalvinResponse(ok, data={'tunnel_id': tunnel.id}).encode()
+        self._send_reply(payload, value)
 
         # If handler did not want it close it again
         if not ok:
@@ -483,8 +474,7 @@ class CalvinProto(CalvinCBClass):
             ok = tunnel.down_handler()
         except:
             pass
-        msg = {'cmd': 'REPLY', 'msg_uuid': payload['msg_uuid'], 'value': response.CalvinResponse(ok).encode()}
-        self.network.links[payload['from_rt_uuid']].send(msg)
+        self._send_reply(payload, response.CalvinResponse(ok).encode())
 
     def tunnel_data_handler(self, payload):
         """ Map received data over tunnel to the correct link and tunnel """
@@ -523,10 +513,7 @@ class CalvinProto(CalvinCBClass):
 
     def port_connect_handler(self, payload):
         """ Request for port connection """
-        reply = self.node.pm.connection_request(payload)
-        # Send reply
-        msg = {'cmd': 'REPLY', 'msg_uuid': payload['msg_uuid'], 'value': reply.encode()}
-        self.network.links[payload['from_rt_uuid']].send(msg)
+        self._send_reply(payload, self.node.pm.connection_request(payload).encode())
 
     def port_disconnect(self, callback=None, port_id=None, peer_node_id=None, peer_port_id=None, peer_actor_id=None,
                         peer_port_name=None, peer_port_dir=None, tunnel=None):
@@ -545,10 +532,8 @@ class CalvinProto(CalvinCBClass):
 
     def port_disconnect_handler(self, payload):
         """ Reguest for port disconnect """
-        reply = self.node.pm.disconnection_request(payload)
-        # Send reply
-        msg = {'cmd': 'REPLY', 'msg_uuid': payload['msg_uuid'], 'value': reply.encode()}
-        self.network.links[payload['from_rt_uuid']].send(msg)
+        self._send_reply(payload, self.node.pm.disconnection_request(payload).encode())
+
 
 if __name__ == '__main__':
     import pytest
