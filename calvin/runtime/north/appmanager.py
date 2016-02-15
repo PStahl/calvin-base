@@ -15,15 +15,18 @@
 # limitations under the License.
 
 import os
+
 from calvin.utilities.calvin_callback import CalvinCB
 from calvin.utilities import dynops
 from calvin.utilities import calvinlogger
-_log = calvinlogger.get_logger(__name__)
 from calvin.runtime.north.plugins.requirements import req_operations
-import calvin.utilities.calvinresponse as response
+from calvin.utilities import calvinresponse as response
 from calvin.utilities import calvinuuid
 from calvin.actorstore.store import ActorStore, GlobalStore
 from calvin.runtime.south.plugins.async import async
+
+_log = calvinlogger.get_logger(__name__)
+
 
 class Application(object):
 
@@ -65,9 +68,9 @@ class Application(object):
         actors = {v: [k] for k, v in self.actors.items() if v is not None}
         # Collect all actors under top component name
         components = {}
-        l = (len(ns)+1) if ns else 0 
+        l = (len(ns) + 1) if ns else 0
         for name, _id in actors.iteritems():
-             if name.find(':',l)> -1:
+            if name.find(':', l) > -1:
                 # This is a component
                 # component name including optional namespace
                 component = ':'.join(name.split(':')[0:(2 if ns else 1)])
@@ -104,9 +107,9 @@ class Application(object):
 
     def group_components(self):
         self.components = {}
-        l = (len(self.ns)+1) if self.ns else 0 
+        l = (len(self.ns) + 1) if self.ns else 0
         for name in self.actors.values():
-             if name.find(':',l)> -1:
+            if name.find(':', l) > -1:
                 # This is part of a component
                 # component name including optional namespace
                 component = ':'.join(name.split(':')[0:(2 if self.ns else 1)])
@@ -116,8 +119,8 @@ class Application(object):
                     self.components[component] = [name]
 
     def component_name(self, name):
-        l = (len(self.ns)+1) if self.ns else 0 
-        if name.find(':',l)> -1:
+        l = (len(self.ns) + 1) if self.ns else 0
+        if name.find(':', l) > -1:
             return ':'.join(name.split(':')[0:(2 if self.ns else 1)])
         else:
             return None
@@ -125,8 +128,8 @@ class Application(object):
     def get_req(self, actor_name):
         name = self.component_name(actor_name) or actor_name
         name = name.split(':', 1)[1] if self.ns else name
-        return self.deploy_info['requirements'][name] if (self.deploy_info and 'requirements' in self.deploy_info
-                                                            and name in self.deploy_info['requirements']) else None
+        return self.deploy_info['requirements'][name] if (self.deploy_info and 'requirements' in self.deploy_info and
+                                                          name in self.deploy_info['requirements']) else None
 
 
 class AppManager(object):
@@ -213,10 +216,11 @@ class AppManager(object):
         if value and 'node_id' in value:
             application.update_node_info(value['node_id'], key)
         else:
-            if retries<10:
+            if retries < 10:
                 # FIXME add backoff time
                 _log.analyze(self._node.id, "+ RETRY", {'actor_id': key, 'value': value, 'retries': retries})
-                self.storage.get_actor(key, CalvinCB(func=self._destroy_actor_cb, application=application, retries=(retries+1)))
+                self.storage.get_actor(key, CalvinCB(func=self._destroy_actor_cb, application=application,
+                                                     retries=(retries + 1)))
             else:
                 # FIXME report failure
                 _log.analyze(self._node.id, "+ GIVE UP", {'actor_id': key, 'value': value, 'retries': retries})
@@ -230,7 +234,8 @@ class AppManager(object):
         if hasattr(application, '_destroy_node_ids'):
             # Already called
             return
-        _log.analyze(self._node.id, "+", {'node_info': application.node_info, 'origin_node_id': application.origin_node_id})
+        _log.analyze(self._node.id, "+",
+                     {'node_info': application.node_info, 'origin_node_id': application.origin_node_id})
         application._destroy_node_ids = {n: None for n in application.node_info.keys()}
         for node_id, actor_ids in application.node_info.iteritems():
             if not node_id:
@@ -239,7 +244,7 @@ class AppManager(object):
                 continue
             # Inform peers to destroy their part of the application
             self._node.proto.app_destroy(node_id, CalvinCB(self._destroy_final_cb, application, node_id),
-                application.id, actor_ids)
+                                         application.id, actor_ids)
 
         if application.id in self.applications:
             del self.applications[application.id]
@@ -283,7 +288,6 @@ class AppManager(object):
         """ Returns list of applications """
         return list(self.applications.keys())
 
-
     ### DEPLOYMENT REQUIREMENTS ###
 
     def collect_placement(self, it, app):
@@ -299,15 +303,15 @@ class AppManager(object):
                 app.actor_placement.setdefault(actor_node_id[0], set([])).add(actor_node_id[1])
         except dynops.PauseIteration:
             _log.analyze(self._node.id, "+ PAUSED",
-                    {'counter': app._collect_placement_counter,
-                     'last_value': app._collect_placement_last_value,
-                     'diff': app._collect_placement_counter - app._collect_placement_last_value})
+                         {'counter': app._collect_placement_counter,
+                          'last_value': app._collect_placement_last_value,
+                          'diff': app._collect_placement_counter - app._collect_placement_last_value})
             # FIXME the dynops should be self triggering, but is not...
             # This is a temporary fix by keep trying
             delay = 0.0 if app._collect_placement_counter > app._collect_placement_last_value + 100 else 0.2
             app._collect_placement_counter += 1
             app._collect_placement_cb = async.DelayedCall(delay, self.collect_placement, it=it,
-                                                                    app=app)
+                                                          app=app)
             return
         except StopIteration:
             if not app.done_final:
@@ -322,7 +326,7 @@ class AppManager(object):
     def execute_requirements(self, application_id, cb):
         """ Build dynops iterator to collect all possible placements,
             then trigger migration.
-            
+
             For initial deployment (all actors on the current node)
         """
         app = None
@@ -352,8 +356,8 @@ class AppManager(object):
                 _log.debug("Only apply requirements to local actors")
                 continue
             _log.analyze(self._node.id, "+ ACTOR REQ", {'actor_id': actor_id}, tb=True)
-            actor_req = self.actor_requirements(app, actor_id).set_name("Actor"+actor_id)
-            actor_placement_it.append((actor_id, actor_req), trigger_iter = actor_req)
+            actor_req = self.actor_requirements(app, actor_id).set_name("Actor" + actor_id)
+            actor_placement_it.append((actor_id, actor_req), trigger_iter=actor_req)
             _log.analyze(self._node.id, "+ ACTOR REQ DONE", {'actor_id': actor_id}, tb=True)
         actor_placement_it.final()
         collect_iter = dynops.Collect(actor_placement_it)
@@ -371,23 +375,23 @@ class AppManager(object):
         intersection_iters = []
         difference_iters = []
         for req in actor.requirements_get():
-            if req['op']=='union_group':
+            if req['op'] == 'union_group':
                 # Special operation that first forms a union of a requirement's list response set
                 # To allow alternative requirements options
-                intersection_iters.append(self._union_requirements(req=req,
-                                                    app=app,
-                                                    actor_id=actor_id,
-                                                    component=actor.component_members()).set_name("SActor"+actor_id))
+                component = actor.component_members().set_name("SActor" + actor_id)
+                intersection_iters.append(self._union_requirements(req=req, app=app, actor_id=actor_id,
+                                                                   component=component))
             else:
                 try:
                     _log.analyze(self._node.id, "+ REQ OP", {'op': req['op'], 'kwargs': req['kwargs']})
-                    it = req_operations[req['op']].req_op(self._node, 
-                                            actor_id=actor_id,
-                                            component=actor.component_members(),
-                                            **req['kwargs']).set_name(req['op']+",SActor"+actor_id)
-                    if req['type']=='+':
+                    it = req_operations[req['op']].req_op(self._node,
+                                                          actor_id=actor_id,
+                                                          component=actor.component_members(),
+                                                          **req['kwargs'])
+                    it.set_name(req['op'] + ",SActor" + actor_id)
+                    if req['type'] == '+':
                         intersection_iters.append(it)
-                    elif req['type']=='-':
+                    elif req['type'] == '-':
                         difference_iters.append(it)
                     else:
                         _log.error("actor_requirements unknown req type %s for %s!!!" % (req['type'], actor_id),
@@ -395,19 +399,22 @@ class AppManager(object):
                 except:
                     _log.error("actor_requirements one req failed for %s!!!" % actor_id, exc_info=True)
                     # FIXME how to handle failed requirements, now we drop it
-        return_iter = dynops.Intersection(*intersection_iters).set_name("SActor"+actor_id)
+        return_iter = dynops.Intersection(*intersection_iters).set_name("SActor" + actor_id)
         if difference_iters:
-            return_iter = dynops.Difference(return_iter, *difference_iters).set_name("SActor"+actor_id)
+            return_iter = dynops.Difference(return_iter, *difference_iters).set_name("SActor" + actor_id)
+
         return return_iter
 
     def _union_requirements(self, **state):
         union_iters = []
         for union_req in state['req']['requirements']:
             try:
-                union_iters.append(req_operations[union_req['op']].req_op(self._node, 
-                                        actor_id=state['actor_id'],
-                                        component=state['component'],
-                                        **union_req['kwargs']).set_name(union_req['op']+",UActor"+state['actor_id']))
+                union_iter = req_operations[union_req['op']].req_op(self._node,
+                                                                    actor_id=state['actor_id'],
+                                                                    component=state['component'],
+                                                                    **union_req['kwargs'])
+                union_iter.set_name(union_req['op'] + ",UActor" + state['actor_id'])
+                union_iters.append(union_iter)
             except:
                 _log.error("union_requirements one req failed for %s!!!" % state['actor_id'], exc_info=True)
         return dynops.Union(*union_iters)
@@ -423,7 +430,8 @@ class AppManager(object):
                 app.actor_placement[actor_id] = set([self._node.id])
             # Status will indicate success, but be different than the normal OK code
             status = response.CalvinResponse(response.CREATED)
-            _log.analyze(self._node.id, "+ MISS PLACEMENT", {'app_id': app.id, 'placement': app.actor_placement}, tb=True)
+            _log.analyze(self._node.id, "+ MISS PLACEMENT", {'app_id': app.id, 'placement': app.actor_placement},
+                         tb=True)
 
         # Collect an actor by actor matrix stipulating a weighting 0.0 - 1.0 for their connectivity
         actor_ids, actor_matrix = self._actor_connectivity(app)
@@ -437,8 +445,10 @@ class AppManager(object):
         for actor_id, possible_nodes in app.actor_placement.iteritems():
             if any([isinstance(n, dynops.InfiniteElement) for n in possible_nodes]):
                 app.actor_placement[actor_id] = node_ids
-        _log.analyze(self._node.id, "+ ACTOR MATRIX", {'actor_ids': actor_ids, 'actor_matrix': actor_matrix,
-                                            'node_ids': node_ids, 'placement': app.actor_placement}, tb=True)
+        _log.analyze(self._node.id, "+ ACTOR MATRIX",
+                     {'actor_ids': actor_ids, 'actor_matrix': actor_matrix,
+                      'node_ids': node_ids, 'placement': app.actor_placement},
+                     tb=True)
 
         # Weight the actors possible placement with their connectivity matrix
         weighted_actor_placement = {}
@@ -448,8 +458,8 @@ class AppManager(object):
             # Sum the actor weights for each actors possible nodes, matrix mult AA * AN,
             # AA actor weights, AN actor * node with 1 when possible
             weights = [sum([actor_weights[actor_ids.index(_id)] if node_id in app.actor_placement[actor_id] else 0
-                             for _id in actor_ids])
-                             for node_id in node_ids]
+                       for _id in actor_ids])
+                       for node_id in node_ids]
             # Get first node with highest weight
             # FIXME should verify that the node actually exist also
             # TODO should select from a resource sharing perspective also, instead of picking first max
@@ -469,12 +479,12 @@ class AppManager(object):
         """ Matrix of weights between actors how close they want to be
             0 = don't care
             1 = same node
-            
+
             Currently any nodes that are connected gets 0.5, and
             diagonal is 1:s
         """
         list_actors = app.get_actors()
-        l= len(list_actors)
+        l = len(list_actors)
         actor_matrix = [[0 for x in range(l)] for x in range(l)]
         for actor_id in list_actors:
             connections = self._node.am.connections(actor_id)
@@ -506,8 +516,8 @@ class AppManager(object):
             if cb:
                 cb(status=response.CalvinResponse(response.NOT_FOUND))
             return
-        app = Application(app_id, value['name'], value['origin_node_id'],
-                                              self._node.am, actors=value['actors_name_map'], deploy_info=deploy_info)
+        app = Application(app_id, value['name'], value['origin_node_id'], self._node.am,
+                          actors=value['actors_name_map'], deploy_info=deploy_info)
         app.group_components()
         app._migrated_actors = {a: None for a in app.actors}
         for actor_id, actor_name in app.actors.iteritems():
@@ -520,22 +530,22 @@ class AppManager(object):
             if actor_id in self._node.am.actors:
                 _log.analyze(self._node.id, "+ OWN ACTOR", {'actor_id': actor_id, 'actor_name': actor_name})
                 self._node.am.update_requirements(actor_id, req, False, move,
-                                                 callback=CalvinCB(self._migrated_cb, app=app,
-                                                                   actor_id=actor_id, cb=cb))
+                                                  callback=CalvinCB(self._migrated_cb, app=app,
+                                                                    actor_id=actor_id, cb=cb))
             else:
                 _log.analyze(self._node.id, "+ OTHER NODE", {'actor_id': actor_id, 'actor_name': actor_name})
-                self.storage.get_actor(actor_id, cb=CalvinCB(self._migrate_from_rt, app=app, 
-                                                                  actor_id=actor_id, req=req,
-                                                                  move=move, cb=cb))
+                self.storage.get_actor(actor_id, cb=CalvinCB(self._migrate_from_rt, app=app,
+                                                             actor_id=actor_id, req=req,
+                                                             move=move, cb=cb))
 
     def _migrate_from_rt(self, key, value, app, actor_id, req, move, cb):
         if not value:
             self._migrated_cb(response.CalvinResponse(response.NOT_FOUND), app, actor_id, cb)
             return
         _log.analyze(self._node.id, "+", {'actor_id': actor_id, 'node_id': value['node_id']},
-                                                                peer_node_id=value['node_id'])
+                     peer_node_id=value['node_id'])
         self._node.proto.actor_migrate(value['node_id'], CalvinCB(self._migrated_cb, app=app, actor_id=actor_id, cb=cb),
-                                     actor_id, req, False, move)
+                                       actor_id, req, False, move)
 
     def _migrated_cb(self, status, app, actor_id, cb):
         app._migrated_actors[actor_id] = status
@@ -545,6 +555,7 @@ class AppManager(object):
         # Done
         if cb:
             cb(status=response.CalvinResponse(all([s for s in app._migrated_actors.values()])))
+
 
 class Deployer(object):
 
@@ -580,9 +591,9 @@ class Deployer(object):
     # TODO Make deployer use the Application class group_components, component_name and get_req
     def group_components(self):
         self.components = {}
-        l = (len(self.ns)+1) if self.ns else 0 
+        l = (len(self.ns) + 1) if self.ns else 0
         for name in self.deployable['actors']:
-             if name.find(':',l)> -1:
+            if name.find(':', l) > -1:
                 # This is part of a component
                 # component name including optional namespace
                 component = ':'.join(name.split(':')[0:(2 if self.ns else 1)])
@@ -592,8 +603,8 @@ class Deployer(object):
                     self.components[component] = [name]
 
     def component_name(self, name):
-        l = (len(self.ns)+1) if self.ns else 0 
-        if name.find(':',l)> -1:
+        l = (len(self.ns) + 1) if self.ns else 0
+        if name.find(':', l) > -1:
             return ':'.join(name.split(':')[0:(2 if self.ns else 1)])
         else:
             return None
@@ -601,9 +612,9 @@ class Deployer(object):
     def get_req(self, actor_name):
         name = self.component_name(actor_name) or actor_name
         name = name.split(':', 1)[1] if self.ns else name
-        return self.deploy_info['requirements'][name] if (self.deploy_info and 'requirements' in self.deploy_info
-                                                            and name in self.deploy_info['requirements']) else []
-        
+        return self.deploy_info['requirements'][name] if (self.deploy_info and 'requirements' in self.deploy_info and
+                                                          name in self.deploy_info['requirements']) else []
+
     def instantiate(self, actor_name, actor_type, argd, signature=None):
         """
         Instantiate an actor.
@@ -667,7 +678,8 @@ class Deployer(object):
         desc = comp_name_desc[1]
         try:
             # List of (found, is_primitive, info)
-            actor_types = [ActorStore().lookup(actor['actor_type']) for actor in desc['component']['structure']['actors'].values()]
+            actors = desc['component']['structure']['actors'].values()
+            actor_types = [ActorStore().lookup(actor['actor_type']) for actor in actors]
         except KeyError:
             actor_types = []
             # Not a component, shadow actor candidate, likely
@@ -696,8 +708,8 @@ class Deployer(object):
         all_desc_iters.final()
         collect_desc_iter = dynops.Collect(all_desc_iters).set_name("collected_desc")
         select_iter = dynops.Map(self.select_actor, collect_desc_iter, done=False,
-                                                         priority={k:[] for k in self.deployable['actors'].keys()},
-                                                         eager=True).set_name("select_actor")
+                                 priority={k: [] for k in self.deployable['actors'].keys()},
+                                 eager=True).set_name("select_actor")
         select_iter.set_cb(self.deploy_unhandled_actors, select_iter)
         self.deploy_unhandled_actors(select_iter)
 
@@ -736,9 +748,13 @@ class Deployer(object):
                 self.deployable['actors'].pop(name)
                 # Then add the new primitive actors
                 for actor_name, actor_desc in desc['component']['structure']['actors'].iteritems():
-                    args = {k: v[1] if v[0] == 'VALUE' else info['args'][v[1]] for k, v in actor_desc['args'].iteritems()}
-                    inports = [c['dst_port'] for c in desc['component']['structure']['connections'] if c['dst'] == actor_name]
-                    outports = [c['src_port'] for c in desc['component']['structure']['connections'] if c['src'] == actor_name]
+                    args = actor_desc['args'].iteritems()
+                    args = {k: v[1] if v[0] == 'VALUE' else info['args'][v[1]] for k, v in args}
+
+                    connections = desc['component']['structure']['connections']
+                    inports = [c['dst_port'] for c in connections if c['dst'] == actor_name]
+                    outports = [c['src_port'] for c in connections if c['src'] == actor_name]
+
                     sign_desc = {'is_primitive': True,
                                  'actor_type': actor_desc['actor_type'],
                                  'inports': inports[:],
@@ -750,26 +766,24 @@ class Deployer(object):
                                                                           'signature': sign}
                     # Replace component connections with actor connection
                     #   outports
-                    comp_outports = [(c['dst_port'], c['src_port']) for c in desc['component']['structure']['connections']
-                                        if c['src'] == actor_name and c['dst'] == "."]
+                    comp_outports = [(c['dst_port'], c['src_port']) for c in connections if c['src'] == actor_name and c['dst'] == "."]
                     for c_port, a_port in comp_outports:
                         if (name + "." + c_port) in self.deployable['connections']:
                             self.deployable['connections'][name + ":" + actor_name + "." + a_port] = \
                                 self.deployable['connections'].pop(name + "." + c_port)
                     #   inports
-                    comp_inports = [(c['src_port'], c['dst_port']) for c in desc['component']['structure']['connections']
-                                        if c['dst'] == actor_name and c['src'] == "."]
+                    comp_inports = [(c['src_port'], c['dst_port']) for c in connections if c['dst'] == actor_name and c['src'] == "."]
                     for outport, ports in self.deployable['connections'].iteritems():
                         for c_inport, a_inport in comp_inports:
                             if (name + "." + c_inport) in ports:
                                 ports.remove(name + "." + c_inport)
                                 ports.append(name + ":" + actor_name + "." + a_inport)
                     _log.analyze(self.node.id, "+ REPLACED PORTS", {'comp_outports': comp_outports,
-                                                                   'comp_inports': comp_inports,
-                                                                   'actor_name': actor_name,
-                                                                   'connections': self.deployable['connections']})
+                                                                    'comp_inports': comp_inports,
+                                                                    'actor_name': actor_name,
+                                                                    'connections': self.deployable['connections']})
                     # Add any new component internal connections (enough with outports)
-                    for connection in desc['component']['structure']['connections']:
+                    for connection in connections:
                         if connection['src'] == actor_name and connection['src_port'] in outports and connection['dst'] != ".":
                             self.deployable['connections'].setdefault(
                                 name + ":" + actor_name + "." + connection['src_port'], []).append(
@@ -781,7 +795,6 @@ class Deployer(object):
                         _log.error("Third phase, could not make shadow actor %s!" % info['actor_type'])
                     self.actor_map[name + ":" + actor_name] = actor_id
                     self.node.app_manager.add(self.app_id, actor_id)
-
 
     def deploy(self):
         """
@@ -823,6 +836,5 @@ class Deployer(object):
                 c = (src_actor, src_port, dst_actor, dst_port)
                 self.connectid(c)
 
-        self.node.app_manager.finalize(self.app_id, migrate=True if self.deploy_info else False, 
+        self.node.app_manager.finalize(self.app_id, migrate=True if self.deploy_info else False,
                                        cb=CalvinCB(self.cb, deployer=self))
-
