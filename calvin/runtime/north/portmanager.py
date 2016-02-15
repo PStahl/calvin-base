@@ -26,6 +26,7 @@ _log = calvinlogger.get_logger(__name__)
 
 TOKEN_CMD = 'TOKEN'
 TOKEN_REPLY_CMD = 'TOKEN_REPLY'
+ABORT = 'ABORT'
 
 
 class PortManager(object):
@@ -91,16 +92,23 @@ class PortManager(object):
         try:
             port = self._get_local_port(port_id=payload['peer_port_id'])
             port.endpoint.recv_token(payload)
-        except:
-            # Inform other end that it sent token to a port that does not exist on this node or
-            # that we have initiated a disconnect (endpoint does not have recv_token).
-            # Can happen e.g. when the actor and port just migrated and the token was in the air
-            reply = {'cmd': TOKEN_REPLY_CMD,
-                     'port_id': payload['port_id'],
-                     'peer_port_id': payload['peer_port_id'],
-                     'sequencenbr': payload['sequencenbr'],
-                     'value': 'ABORT'}
-            tunnel.send(reply)
+        except Exception as e:
+            _log.debug("Failed to receive token: {}".format(e))
+            self._abort_recv_token(tunnel, payload)
+
+    def _abort_recv_token(self, tunnel, payload):
+        """Inform other end that it sent token to a port that does not exist on this node or
+        that we have initiated a disconnect (endpoint does not have recv_token).
+        Can happen e.g. when the actor and port just migrated and the token was in the air
+        """
+        reply = {
+            'cmd': TOKEN_REPLY_CMD,
+            'port_id': payload['port_id'],
+            'peer_port_id': payload['peer_port_id'],
+            'sequencenbr': payload['sequencenbr'],
+            'value': ABORT
+        }
+        tunnel.send(reply)
 
     def recv_token_reply_handler(self, tunnel, payload):
         """ Gets called when a token is (N)ACKed for any port """
@@ -108,15 +116,19 @@ class PortManager(object):
             port = self._get_local_port(port_id=payload['port_id'])
         except Exception as e:
             _log.debug("Failed to get local port: {}".format(e))
-        else:
-            # Send the reply to correct endpoint (an outport may have several when doing fan-out)
-            for e in port.endpoints:
-                # We might have started disconnect before getting the reply back, just ignore in that case
-                # it is sorted out if we connect again
+            return
+
+        self._send_reply_to_endpoint(port, payload)
+
+    def _send_reply_to_endpoint(self, port, payload):
+        # Send the reply to correct endpoint (an outport may have several when doing fan-out)
+        for e in port.endpoints:
+            # We might have started disconnect before getting the reply back, just ignore in that case
+            # it is sorted out if we connect again
+            if e.get_peer()[1] == payload['peer_port_id']:
                 try:
-                    if e.get_peer()[1] == payload['peer_port_id']:
-                        e.reply(payload['sequencenbr'], payload['value'])
-                        break
+                    e.reply(payload['sequencenbr'], payload['value'])
+                    return
                 except Exception as e:
                     _log.debug("Failed to send reply: {}".format(e))
 
@@ -133,10 +145,7 @@ class PortManager(object):
     def connection_request(self, payload):
         """ A request from a peer to connect a port"""
         _log.analyze(self.node.id, "+", payload, peer_node_id=payload['from_rt_uuid'])
-        if not ('peer_port_id' in payload or ('peer_actor_id' in payload and 'peer_port_name' in payload and
-                'peer_port_dir' in payload)):
-            # Not enough info to find port
-            _log.analyze(self.node.id, "+ NOT ENOUGH DATA", payload, peer_node_id=payload['from_rt_uuid'])
+        if not self._valid_connection_request(payload):
             return response.CalvinResponse(response.BAD_REQUEST)
         try:
             port = self._get_local_port(payload['peer_actor_id'], payload['peer_port_name'], payload['peer_port_dir'],
@@ -164,6 +173,13 @@ class PortManager(object):
 
             _log.analyze(self.node.id, "+ OK", payload, peer_node_id=payload['from_rt_uuid'])
             return response.CalvinResponse(response.OK, {'port_id': port.id})
+
+    def _valid_connection_request(self, payload):
+        ok = 'peer_port_id' in payload or ('peer_actor_id' in payload and 'peer_port_name' in payload and 'peer_port_dir' in payload)
+        if not ok:
+            # Not enough info to find port
+            _log.analyze(self.node.id, "+ NOT ENOUGH DATA", payload, peer_node_id=payload['from_rt_uuid'])
+        return ok
 
     def _create_tunnel_endpoint(self, port, tunnel, peer_node_id, port_id):
         if isinstance(port, InPort):
@@ -632,9 +648,8 @@ class PortManager(object):
             # Remove this port from list
             port_ids.remove(state['port_id'])
             # If all ports done send positive response
-            if not port_ids:
-                if _callback:
-                    _callback(status=response.CalvinResponse(True), actor_id=state['actor_id'])
+            if not port_ids and _callback:
+                _callback(status=response.CalvinResponse(True), actor_id=state['actor_id'])
 
     def disconnection_request(self, payload):
         """ A request from a peer to disconnect a port"""
@@ -644,10 +659,8 @@ class PortManager(object):
             return response.CalvinResponse(response.BAD_REQUEST)
         # Check if port actually is local
         try:
-            port = self._get_local_port(payload['peer_actor_id'] if 'peer_actor_id' in payload else None,
-                                        payload['peer_port_name'] if 'peer_port_name' in payload else None,
-                                        payload['peer_port_dir'] if 'peer_port_dir' in payload else None,
-                                        payload['peer_port_id'] if 'peer_port_id' in payload else None)
+            port = self._get_local_port(payload.get('peer_actor_id'), payload.get('peer_port_name'),
+                                        payload.get('peer_port_dir'), payload.get('peer_port_id'))
         except:
             # We don't have the port
             return response.CalvinResponse(response.NOT_FOUND)
