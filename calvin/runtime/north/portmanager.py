@@ -335,20 +335,12 @@ class PortManager(object):
         _log.analyze(self.node.id, "+", {k: state[k] for k in state.keys() if k != 'callback'},
                      peer_node_id=state['peer_node_id'], tb=True)
         if not isinstance(value, dict):
-            if state['callback']:
-                state['callback'](status=response.CalvinResponse(response.BAD_REQUEST, "Storage return invalid information"), **state)
-                return
-            else:
-                raise Exception("Storage return invalid information")
+            return self._invalid_storage_return_value(state, value)
 
         if not state['peer_node_id'] and 'node_id' in value and value['node_id']:
             state['peer_node_id'] = value['node_id']
         else:
-            if state['callback']:
-                state['callback'](status=response.CalvinResponse(response.BAD_REQUEST, "Storage return invalid information"), **state)
-                return
-            else:
-                raise Exception("Storage return invalid information")
+            return self._invalid_storage_return_value(state, value)
 
         self._connect(**state)
 
@@ -357,22 +349,21 @@ class PortManager(object):
         _log.analyze(self.node.id, "+", {k: state[k] for k in state.keys() if k != 'callback'},
                      peer_node_id=state['peer_node_id'], tb=True)
         if not isinstance(value, dict):
-            if state['callback']:
-                state['callback'](status=response.CalvinResponse(response.BAD_REQUEST, "Storage return invalid information"), **state)
-                return
-            else:
-                raise Exception("Storage return invalid information")
+            return self._invalid_storage_return_value(state, value)
 
         if not state['peer_node_id'] and 'node_id' in value and value['node_id']:
             state['peer_node_id'] = value['node_id']
         else:
-            if state['callback']:
-                state['callback'](status=response.CalvinResponse(response.BAD_REQUEST, "Storage return invalid information"), **state)
-                return
-            else:
-                raise Exception("Storage return invalid information")
+            return self._invalid_storage_return_value(state, value)
 
         self._connect(**state)
+
+    def _invalid_storage_return_value(self, state):
+        callback = state.get('callback')
+        if callback:
+            callback(status=response.CalvinResponse(response.BAD_REQUEST, "Storage return invalid information"), **state)
+        else:
+            raise Exception("Storage return invalid information")
 
     def _connect(self, **state):
         """ Do the connection of ports, all neccessary information supplied but
