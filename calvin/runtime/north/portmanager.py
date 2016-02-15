@@ -24,6 +24,9 @@ from calvin.actor.actor import ShadowActor
 
 _log = calvinlogger.get_logger(__name__)
 
+TOKEN_CMD = 'TOKEN'
+TOKEN_REPLY_CMD = 'TOKEN_REPLY'
+
 
 class PortManager(object):
     """
@@ -55,35 +58,33 @@ class PortManager(object):
     def tunnel_down(self, tunnel):
         """ Callback that the tunnel is not accepted or is going down """
         tunnel_peer_id = tunnel.peer_node_id
-        try:
-            self.tunnels.pop(tunnel_peer_id)
-        except Exception as e:
-            _log.debug("Failed to remove tunnel peer {} from tunnels: {}".format(tunnel_peer_id, e))
 
-        # If a port connect have ordered a tunnel then it have a callback in pending
-        # which want information on the failure
-        if tunnel_peer_id in self.pending_tunnels:
-            for cb in self.pending_tunnels[tunnel_peer_id]:
-                try:
-                    cb(status=response.CalvinResponse(False))
-                except Exception as e:
-                    _log.debug("Failed to call {}: {}".format(cb, e))
-            self.pending_tunnels.pop(tunnel_peer_id)
+        if tunnel_peer_id in self.tunnels:
+            self.tunnels.pop(tunnel_peer_id)
+
+        self._send_response_to_pending_tunnels(tunnel_peer_id, False)
+
         # We should always return True which sends an OK on the destruction of the tunnel
         return True
 
     def tunnel_up(self, tunnel):
         """ Callback that the tunnel is working """
         tunnel_peer_id = tunnel.peer_node_id
+        self._send_response_to_pending_tunnels(tunnel_peer_id, True)
+
+    def _send_response_to_pending_tunnels(self, tunnel_peer_id, status):
         # If a port connect have ordered a tunnel then it have a callback in pending
         # which want to continue with the connection
-        if tunnel_peer_id in self.pending_tunnels:
-            for cb in self.pending_tunnels[tunnel_peer_id]:
-                try:
-                    cb(status=response.CalvinResponse(True))
-                except Exception as e:
-                    _log.debug("Failed to call {}: {}".format(cb, e))
-            self.pending_tunnels.pop(tunnel_peer_id)
+        if tunnel_peer_id not in self.pending_tunnels:
+            return
+
+        for cb in self.pending_tunnels[tunnel_peer_id]:
+            try:
+                cb(status=response.CalvinResponse(status))
+            except Exception as e:
+                _log.debug("Failed to call {}: {}".format(cb, e))
+
+        self.pending_tunnels.pop(tunnel_peer_id)
 
     def recv_token_handler(self, tunnel, payload):
         """ Gets called when a token arrives on any port """
@@ -94,7 +95,7 @@ class PortManager(object):
             # Inform other end that it sent token to a port that does not exist on this node or
             # that we have initiated a disconnect (endpoint does not have recv_token).
             # Can happen e.g. when the actor and port just migrated and the token was in the air
-            reply = {'cmd': 'TOKEN_REPLY',
+            reply = {'cmd': TOKEN_REPLY_CMD,
                      'port_id': payload['port_id'],
                      'peer_port_id': payload['peer_port_id'],
                      'sequencenbr': payload['sequencenbr'],
@@ -121,11 +122,13 @@ class PortManager(object):
 
     def tunnel_recv_handler(self, tunnel, payload):
         """ Gets called when we receive a message over a tunnel """
-        if 'cmd' in payload:
-            if 'TOKEN' == payload['cmd']:
-                self.recv_token_handler(tunnel, payload)
-            elif 'TOKEN_REPLY' == payload['cmd']:
-                self.recv_token_reply_handler(tunnel, payload)
+        if 'cmd' not in payload:
+            _log.debug("No command in payload: {}".format(payload))
+
+        if TOKEN_CMD == payload['cmd']:
+            self.recv_token_handler(tunnel, payload)
+        elif TOKEN_REPLY_CMD == payload['cmd']:
+            self.recv_token_reply_handler(tunnel, payload)
 
     def connection_request(self, payload):
         """ A request from a peer to connect a port"""
@@ -136,13 +139,12 @@ class PortManager(object):
             _log.analyze(self.node.id, "+ NOT ENOUGH DATA", payload, peer_node_id=payload['from_rt_uuid'])
             return response.CalvinResponse(response.BAD_REQUEST)
         try:
-            port = self._get_local_port(payload['peer_actor_id'],
-                                        payload['peer_port_name'],
-                                        payload['peer_port_dir'],
+            port = self._get_local_port(payload['peer_actor_id'], payload['peer_port_name'], payload['peer_port_dir'],
                                         payload['peer_port_id'])
-        except:
+        except Exception as e:
             # We don't have the port
             _log.analyze(self.node.id, "+ PORT NOT FOUND", payload, peer_node_id=payload['from_rt_uuid'])
+            _log.debug("Failed to find port: {}".format(e))
             return response.CalvinResponse(response.NOT_FOUND)
         else:
             if 'tunnel_id' not in payload:
@@ -156,26 +158,8 @@ class PortManager(object):
                 _log.analyze(self.node.id, "+ WRONG TUNNEL", payload, peer_node_id=payload['from_rt_uuid'])
                 return response.CalvinResponse(response.GONE)
 
-            if isinstance(port, InPort):
-                endp = endpoint.TunnelInEndpoint(port,
-                                                 tunnel,
-                                                 payload['from_rt_uuid'],
-                                                 payload['port_id'],
-                                                 self.node.sched.trigger_loop)
-            else:
-                endp = endpoint.TunnelOutEndpoint(port,
-                                                  tunnel,
-                                                  payload['from_rt_uuid'],
-                                                  payload['port_id'],
-                                                  self.node.sched.trigger_loop)
-                self.monitor.register_out_endpoint(endp)
-
-            invalid_endpoint = port.attach_endpoint(endp)
-            # Remove previous endpoint
-            if invalid_endpoint:
-                if isinstance(invalid_endpoint, endpoint.TunnelOutEndpoint):
-                    self.monitor.unregister_out_endpoint(invalid_endpoint)
-                invalid_endpoint.destroy()
+            endp = self._create_tunnel_endpoint(port, tunnel, payload['from_rt_uuid'], payload['port_id'])
+            self._attach_endpoint(port, endp)
 
             # Update storage
             if isinstance(port, InPort):
@@ -185,6 +169,23 @@ class PortManager(object):
 
             _log.analyze(self.node.id, "+ OK", payload, peer_node_id=payload['from_rt_uuid'])
             return response.CalvinResponse(response.OK, {'port_id': port.id})
+
+    def _create_tunnel_endpoint(self, port, tunnel, peer_node_id, port_id):
+        if isinstance(port, InPort):
+            endp = endpoint.TunnelInEndpoint(port, tunnel, peer_node_id, port_id, self.node.sched.trigger_loop)
+        else:
+            endp = endpoint.TunnelOutEndpoint(port, tunnel, peer_node_id, port_id, self.node.sched.trigger_loop)
+            self.monitor.register_out_endpoint(endp)
+
+        return endp
+
+    def _attach_endpoint(self, port, endp):
+        invalid_endpoint = port.attach_endpoint(endp)
+        # Remove previous endpoint
+        if invalid_endpoint:
+            if isinstance(invalid_endpoint, endpoint.TunnelOutEndpoint):
+                self.monitor.unregister_out_endpoint(invalid_endpoint)
+            invalid_endpoint.destroy()
 
     def connect(self, callback=None, actor_id=None, port_name=None, port_dir=None, port_id=None, peer_node_id=None,
                 peer_actor_id=None, peer_port_name=None, peer_port_dir=None, peer_port_id=None):
@@ -445,26 +446,8 @@ class PortManager(object):
         # Set up the port's endpoint
         tunnel = self.tunnels[state['peer_node_id']]
         port = self.ports[state['port_id']]
-        if isinstance(port, InPort):
-            endp = endpoint.TunnelInEndpoint(port,
-                                             tunnel,
-                                             state['peer_node_id'],
-                                             reply.data['port_id'],
-                                             self.node.sched.trigger_loop)
-        else:
-            endp = endpoint.TunnelOutEndpoint(port,
-                                              tunnel,
-                                              state['peer_node_id'],
-                                              reply.data['port_id'],
-                                              self.node.sched.trigger_loop)
-            # register into main loop
-            self.monitor.register_out_endpoint(endp)
-        invalid_endpoint = port.attach_endpoint(endp)
-        # remove previous endpoint
-        if invalid_endpoint:
-            if isinstance(invalid_endpoint, endpoint.TunnelOutEndpoint):
-                self.monitor.unregister_out_endpoint(invalid_endpoint)
-            invalid_endpoint.destroy()
+        endp = self._create_tunnel_endpoint(port, tunnel, state['peer_node_id'], reply.data['port_id'])
+        self._attach_endpoint(port, endp)
 
         # Done connecting the port
         if state['callback']:
@@ -482,15 +465,8 @@ class PortManager(object):
         ein = endpoint.LocalInEndpoint(inport, outport)
         eout = endpoint.LocalOutEndpoint(outport, inport)
 
-        invalid_endpoint = inport.attach_endpoint(ein)
-        if invalid_endpoint:
-            invalid_endpoint.destroy()
-
-        invalid_endpoint = outport.attach_endpoint(eout)
-        if invalid_endpoint:
-            if isinstance(invalid_endpoint, endpoint.TunnelOutEndpoint):
-                self.monitor.unregister_out_endpoint(invalid_endpoint)
-            invalid_endpoint.destroy()
+        self._attach_endpoint(inport, ein)
+        self._attach_endpoint(outport, eout)
 
         # Update storage
         self.node.storage.add_port(inport, self.node.id, inport.owner.id, "in")
