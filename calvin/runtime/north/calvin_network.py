@@ -137,6 +137,21 @@ class CalvinNetwork(object):
         """ Register THE function that will receive all incomming messages on all links """
         self.recv_handler = recv_handler
 
+    def _filename_without_extension(self, filename):
+        return os.path.basename(filename)[:-3]
+
+    def _find_modules(self, filenames):
+        modules = []
+        for filename in filenames:
+            if not os.path.basename(filename).startswith("_") and os.path.isfile(filename):
+                modules.append(self._filename_without_extension(filename))
+        return modules
+
+    def _find_directories(self, filenames):
+        # Find directories with __init__.py python file (which should have the register function)
+        dirs = [f for f in filenames if not os.path.basename(f).startswith('_') and os.path.isdir(f)]
+        return [os.path.basename(d) for d in dirs if os.path.isfile(os.path.join(d, "__init__.py"))]
+
     def register(self, schemas, formats):
         """ Load and registers all transport plug-in modules matching the list of schemas.
             The plug-in modules can register any number of schemas with corresponding
@@ -145,32 +160,33 @@ class CalvinNetwork(object):
             uri schema or start listening for incoming requests.
         """
         # Find python files in plugins/transport
-        module_paths = glob.glob(os.path.join(TRANSPORT_PLUGIN_PATH, "*.py"))
-        modules = [os.path.basename(f)[:-3] for f in module_paths if not os.path.basename(
-            f).startswith('_') and os.path.isfile(f)]
+        py_files = glob.glob(os.path.join(TRANSPORT_PLUGIN_PATH, "*.py"))
+        modules = self._find_modules(py_files)
 
-        # Find directories with __init__.py python file (which should have the register function)
-        module_paths = glob.glob(os.path.join(TRANSPORT_PLUGIN_PATH, "*"))
-        dirs = [f for f in module_paths if not os.path.basename(f).startswith('_') and os.path.isdir(f)]
-        modules += [os.path.basename(d) for d in dirs if os.path.isfile(os.path.join(d, "__init__.py"))]
+        files = glob.glob(os.path.join(TRANSPORT_PLUGIN_PATH, "*"))
+        modules.extend(self._find_directories(files))
 
         # Try to register each transport plugin module
         for m in modules:
-            schema_objects = {}
-            try:
-                self.transport_modules[m] = importlib.import_module(TRANSPORT_PLUGIN_NS + "." + m)
-                # Get a dictionary of schemas -> transport factory
-                schema_objects = self.transport_modules[m].register(self.node.id,
-                                                                    {'join_finished': [CalvinCB(self.join_finished)],
-                                                                     'data_received': [self.recv_handler],
-                                                                     'peer_disconnected': [CalvinCB(self.peer_disconnected)]},
-                                                                    schemas, formats)
-            except Exception as e:
-                _log.error("Could not register transport plugin {}: {}".format(m, e))
-            if schema_objects:
-                _log.debug("Register transport plugin %s" % (m,))
-                # Add them to the list - currently only one module can handle one schema
-                self.transports.update(schema_objects)
+            self._register_module(schemas, formats, m)
+
+    def _register_module(self, schemas, formats, module):
+        schema_objects = None
+        try:
+            self.transport_modules[module] = importlib.import_module(TRANSPORT_PLUGIN_NS + "." + module)
+            # Get a dictionary of schemas -> transport factory
+            schema_objects = self.transport_modules[module].register(self.node.id,
+                                                                     {'join_finished': [CalvinCB(self.join_finished)],
+                                                                      'data_received': [self.recv_handler],
+                                                                      'peer_disconnected': [CalvinCB(self.peer_disconnected)]},
+                                                                     schemas, formats)
+        except Exception as e:
+            _log.error("Could not register transport plugin {}: {}".format(module, e))
+
+        if schema_objects:
+            _log.debug("Register transport plugin %s" % (module))
+            # Add them to the list - currently only one module can handle one schema
+            self.transports.update(schema_objects)
 
     def start_listeners(self, uris=None):
         """ Start the transport listening on the uris
