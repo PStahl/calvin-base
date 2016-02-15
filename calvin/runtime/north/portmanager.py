@@ -550,20 +550,9 @@ class PortManager(object):
 
         port = self.ports[state['port_id']]
         # Now check the peer port, peer_ids is list of (peer_node_id, peer_port_id) tuples
-        peer_ids = []
-        if isinstance(port, InPort):
-            # Inport only have one possible peer
-            peer_ids = [port.get_peer()]
-        else:
-            # Outport have several possible peers
-            peer_ids = port.get_peers()
+        peer_ids = self._get_port_peers(port)
 
-        # Disconnect and destroy the endpoints
-        endpoints = port.disconnect()
-        for ep in endpoints:
-            if isinstance(ep, endpoint.TunnelOutEndpoint):
-                self.monitor.unregister_out_endpoint(ep)
-            ep.destroy()
+        self._disconnect_and_destroy_endpoints(port)
 
         ok = True
         for peer_node_id, peer_port_id in peer_ids:
@@ -590,6 +579,22 @@ class PortManager(object):
             if state['callback']:
                 _log.analyze(self.node.id, "+ DONE", {k: state[k] for k in state.keys() if k != 'callback'})
                 state['callback'](status=response.CalvinResponse(ok), **state)
+
+    def _disconnect_and_destroy_endpoints(self, port):
+        # Disconnect and destroy the endpoints
+        endpoints = port.disconnect()
+        for ep in endpoints:
+            if isinstance(ep, endpoint.TunnelOutEndpoint):
+                self.monitor.unregister_out_endpoint(ep)
+            ep.destroy()
+
+    def _get_port_peers(self, port):
+        if isinstance(port, InPort):
+            # Inport only have one possible peer
+            return [port.get_peer()]
+        else:
+            # Outport have several possible peers
+            return port.get_peers()
 
     def _disconnected_port(self, reply, **state):
         """ Get called for each peer port when diconnecting but callback should only be called once"""
@@ -647,13 +652,7 @@ class PortManager(object):
             # We don't have the port
             return response.CalvinResponse(response.NOT_FOUND)
         else:
-            # Disconnect and destroy endpoints
-            endpoints = port.disconnect()
-            for ep in endpoints:
-                if isinstance(ep, endpoint.TunnelOutEndpoint):
-                    self.monitor.unregister_out_endpoint(ep)
-                ep.destroy()
-
+            self._disconnect_and_destroy_endpoints(port)
             return response.CalvinResponse(True)
 
     def add_ports_of_actor(self, actor):
