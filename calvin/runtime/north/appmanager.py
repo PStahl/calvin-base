@@ -670,8 +670,7 @@ class Deployer(object):
 
         actor_id = self.instantiate_primitive(actor_name, actor_type, argd, req, signature)
         if not actor_id:
-            raise Exception(
-                "Could not instantiate actor of type: %s" % actor_type)
+            raise Exception("Could not instantiate actor of type: %s" % actor_type)
         self.actor_map[actor_name] = actor_id
         self.node.app_manager.add(self.app_id, actor_id)
 
@@ -809,53 +808,68 @@ class Deployer(object):
             args = {k: v[1] if v[0] == 'VALUE' else info['args'][v[1]] for k, v in args}
 
             connections = desc['component']['structure']['connections']
-            inports = [c['dst_port'] for c in connections if c['dst'] == actor_name]
-            outports = [c['src_port'] for c in connections if c['src'] == actor_name]
 
-            sign_desc = {
-                'is_primitive': True,
-                'actor_type': actor_desc['actor_type'],
-                'inports': inports[:],
-                'outports': outports[:]
-            }
-            sign = GlobalStore.actor_signature(sign_desc)
+            sign_desc = self._sign_desc(actor_desc, actor_name, connections)
+            actor_signature = GlobalStore.actor_signature(sign_desc)
             self.deployable['actors'][name + ":" + actor_name] = {
                 'args': args,
                 'actor_type': actor_desc['actor_type'],
                 'signature_desc': sign_desc,
-                'signature': sign
+                'signature': actor_signature
             }
-            # Replace component connections with actor connection
-            #   outports
-            comp_outports = [(c['dst_port'], c['src_port']) for c in connections if c['src'] == actor_name and c['dst'] == "."]
-            for c_port, a_port in comp_outports:
-                if (name + "." + c_port) in self.deployable['connections']:
-                    self.deployable['connections'][name + ":" + actor_name + "." + a_port] = \
-                        self.deployable['connections'].pop(name + "." + c_port)
-            #   inports
-            comp_inports = [(c['src_port'], c['dst_port']) for c in connections if c['dst'] == actor_name and c['src'] == "."]
-            for outport, ports in self.deployable['connections'].iteritems():
-                for c_inport, a_inport in comp_inports:
-                    if (name + "." + c_inport) in ports:
-                        ports.remove(name + "." + c_inport)
-                        ports.append(name + ":" + actor_name + "." + a_inport)
-            _log.analyze(self.node.id, "+ REPLACED PORTS", {'comp_outports': comp_outports,
-                                                            'comp_inports': comp_inports,
-                                                            'actor_name': actor_name,
-                                                            'connections': self.deployable['connections']})
-            # Add any new component internal connections (enough with outports)
-            for connection in connections:
-                if connection['src'] == actor_name and connection['src_port'] in outports and connection['dst'] != ".":
-                    self.deployable['connections'].setdefault(
-                        name + ":" + actor_name + "." + connection['src_port'], []).append(
-                            name + ":" + connection['dst'] + "." + connection['dst_port'])
-            _log.analyze(self.node.id, "+ ADDED PORTS", {'connections': self.deployable['connections']})
+
+            self._replace_component_connections_with_actor_connections(connections, name, actor_name)
+            self._add_internal_component_connections(connections, name, actor_name)
+
             # Instanciate it
-            actor_id = self.instantiate_primitive(name + ":" + actor_name, actor_desc['actor_type'], args, req, sign)
+            actor_id = self.instantiate_primitive(name + ":" + actor_name, actor_desc['actor_type'], args, req,
+                                                  actor_signature)
             if not actor_id:
                 _log.error("Third phase, could not make shadow actor %s!" % info['actor_type'])
+
             self.actor_map[name + ":" + actor_name] = actor_id
             self.node.app_manager.add(self.app_id, actor_id)
+
+    def _sign_desc(self, actor_desc, actor_name, connections):
+        inports = [c['dst_port'] for c in connections if c['dst'] == actor_name]
+        outports = [c['src_port'] for c in connections if c['src'] == actor_name]
+
+        return {
+            'is_primitive': True,
+            'actor_type': actor_desc['actor_type'],
+            'inports': inports,
+            'outports': outports
+        }
+
+    def _replace_component_connections_with_actor_connections(self, connections, name, actor_name):
+        # Replace component connections with actor connection
+        #   outports
+        comp_outports = [(c['dst_port'], c['src_port']) for c in connections if c['src'] == actor_name and c['dst'] == "."]
+        for c_port, a_port in comp_outports:
+            if (name + "." + c_port) in self.deployable['connections']:
+                self.deployable['connections'][name + ":" + actor_name + "." + a_port] = \
+                    self.deployable['connections'].pop(name + "." + c_port)
+        #   inports
+        comp_inports = [(c['src_port'], c['dst_port']) for c in connections if c['dst'] == actor_name and c['src'] == "."]
+        for outport, ports in self.deployable['connections'].iteritems():
+            for c_inport, a_inport in comp_inports:
+                if (name + "." + c_inport) in ports:
+                    ports.remove(name + "." + c_inport)
+                    ports.append(name + ":" + actor_name + "." + a_inport)
+        _log.analyze(self.node.id, "+ REPLACED PORTS", {'comp_outports': comp_outports,
+                                                        'comp_inports': comp_inports,
+                                                        'actor_name': actor_name,
+                                                        'connections': self.deployable['connections']})
+
+    def _add_internal_component_connections(self, connections, name, actor_name):
+        """Add any new component internal connections (enough with outports)"""
+        outports = [c['src_port'] for c in connections if c['src'] == actor_name]
+        for connection in connections:
+            if connection['src'] == actor_name and connection['src_port'] in outports and connection['dst'] != ".":
+                self.deployable['connections'].setdefault(
+                    name + ":" + actor_name + "." + connection['src_port'], []).append(
+                        name + ":" + connection['dst'] + "." + connection['dst_port'])
+        _log.analyze(self.node.id, "+ ADDED PORTS", {'connections': self.deployable['connections']})
 
     def deploy(self):
         """
