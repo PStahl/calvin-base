@@ -203,54 +203,71 @@ class Intersection(DynOps):
             e = self.candidates.pop()
             self.set.add(e)
             return e
+
         while True:
-            active = False
-            for v in self.iters:
-                if not self.final[id(v)]:
-                    try:
-                        n = v.next()
-                        if isinstance(n, InfiniteElement):
-                            self.infs[id(v)] = True
-                            self.final[id(v)] = True
-                        self.drawn[id(v)].add(n)
-                        active = True
-                    except PauseIteration:
-                        pass
-                    except StopIteration:
-                        self.final[id(v)] = True
+            active = self._iterate_values()
+
             if all(self.infs.values()):
-                self.infinite_set = True
-                if self.infinite_sent:
-                    _log.debug("%s INFINITE STOP" % self.__str__())
-                    raise StopIteration
-                else:
-                    _log.debug("%s INFINITE SEND" % self.__str__())
-                    self.infinite_sent = True
-                    # FIXME Need to trig?
-                    #self.trig()
-                    return InfiniteElement
-                
-            # Current seen intersection
-            self.candidates.update(set.intersection(*[self.drawn[id(v)] for v in self.iters if not self.infs[id(v)]]))
-            _log.debug("Intersection%s%s%s candidates: %s drawn: %s infs: %s"  % (("<" + self.name + ">") if self.name else "",
-                                           "<Inf>" if self.infinite_set else "",
-                                           "#" if self._final else "-", self.candidates, self.drawn.values(), self.infs.values()))
-            # remove from individual iterables
-            for v in self.drawn.values():
-                v.difference_update(self.candidates)
-            # Remove previously seen
-            self.candidates.difference_update(self.set)
+                return self._all_is_infinite()
+
+            self._update_intersection()
+
             if self.candidates:
                 e = self.candidates.pop()
                 self.set.add(e)
                 return e
             if not active or all(self.final.values()):
                 break
+
         if all([self.final[id(v)] for v in self.iters]):
             self._final = True
             raise StopIteration
         else:
             raise PauseIteration
+
+    def _iterate_values(self):
+        active = False
+        for v in self.iters:
+            if not self.final[id(v)]:
+                try:
+                    n = v.next()
+                    if isinstance(n, InfiniteElement):
+                        self.infs[id(v)] = True
+                        self.final[id(v)] = True
+                    self.drawn[id(v)].add(n)
+                    active = True
+                except PauseIteration:
+                    pass
+                except StopIteration:
+                    self.final[id(v)] = True
+
+        return active
+
+    def _all_is_infinite(self):
+        self.infinite_set = True
+        if self.infinite_sent:
+            _log.debug("%s INFINITE STOP" % self.__str__())
+            raise StopIteration
+
+        _log.debug("%s INFINITE SEND" % self.__str__())
+        self.infinite_sent = True
+        # FIXME Need to trig?
+        #self.trig()
+        return InfiniteElement
+
+    def _update_intersection(self):
+        # Current seen intersection
+        self.candidates.update(set.intersection(*[self.drawn[id(v)] for v in self.iters if not self.infs[id(v)]]))
+        name = ("<" + self.name + ">") if self.name else ""
+        infs = "<Inf>" if self.infinite_set else ""
+        final = "#" if self._final else "-"
+        _log.debug("Intersection{}{}{} candidates: {} drawn: {} infs: {}".format(
+            name, infs, final, self.candidates, self.drawn.values(), self.infs.values()))
+        # remove from individual iterables
+        for v in self.drawn.values():
+            v.difference_update(self.candidates)
+        # Remove previously seen
+        self.candidates.difference_update(self.set)
 
     def __str__(self):
         s = ""
