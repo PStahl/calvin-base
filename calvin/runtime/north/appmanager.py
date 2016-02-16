@@ -230,16 +230,15 @@ class AppManager(object):
         _log.debug("Destroy app peers actor cb %s" % key)
         if value and 'node_id' in value:
             application.update_node_info(value['node_id'], key)
+        elif retries < MAX_ACTOR_DELETE_RETRIES:
+            # FIXME add backoff time
+            _log.analyze(self._node.id, "+ RETRY", {'actor_id': key, 'value': value, 'retries': retries})
+            self.storage.get_actor(key, CalvinCB(func=self._destroy_actor_cb, application=application,
+                                                 retries=(retries + 1)))
         else:
-            if retries < MAX_ACTOR_DELETE_RETRIES:
-                # FIXME add backoff time
-                _log.analyze(self._node.id, "+ RETRY", {'actor_id': key, 'value': value, 'retries': retries})
-                self.storage.get_actor(key, CalvinCB(func=self._destroy_actor_cb, application=application,
-                                                     retries=(retries + 1)))
-            else:
-                # FIXME report failure
-                _log.analyze(self._node.id, "+ GIVE UP", {'actor_id': key, 'value': value, 'retries': retries})
-                application.update_node_info(None, key)
+            # FIXME report failure
+            _log.analyze(self._node.id, "+ GIVE UP", {'actor_id': key, 'value': value, 'retries': retries})
+            application.update_node_info(None, key)
 
         if application.complete_node_info():
             self._destroy_final(application)
@@ -251,15 +250,7 @@ class AppManager(object):
             return
         _log.analyze(self._node.id, "+",
                      {'node_info': application.node_info, 'origin_node_id': application.origin_node_id})
-        application._destroy_node_ids = {n: None for n in application.node_info.keys()}
-        for node_id, actor_ids in application.node_info.iteritems():
-            if not node_id:
-                _log.analyze(self._node.id, "+ UNKNOWN NODE", {})
-                application._destroy_node_ids[None] = response.CalvinResponse(False)
-                continue
-            # Inform peers to destroy their part of the application
-            self._node.proto.app_destroy(node_id, CalvinCB(self._destroy_final_cb, application, node_id),
-                                         application.id, actor_ids)
+        self._send_app_destroy_to_peers(application)
 
         if application.id in self.applications:
             del self.applications[application.id]
@@ -270,6 +261,17 @@ class AppManager(object):
 
         self.storage.delete_application(application.id)
         self._destroy_final_cb(application, '', response.CalvinResponse(True))
+
+    def _send_app_destroy_to_peers(self, application):
+        application._destroy_node_ids = {n: None for n in application.node_info.keys()}
+        for node_id, actor_ids in application.node_info.iteritems():
+            if node_id:
+                # Inform peers to destroy their part of the application
+                self._node.proto.app_destroy(node_id, CalvinCB(self._destroy_final_cb, application, node_id),
+                                             application.id, actor_ids)
+            else:
+                _log.analyze(self._node.id, "+ UNKNOWN NODE", {})
+                application._destroy_node_ids[None] = response.CalvinResponse(False)
 
     def _destroy_final_cb(self, application, node_id, status):
         _log.analyze(self._node.id, "+", {'node_id': node_id, 'status': status})
