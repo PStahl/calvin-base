@@ -346,13 +346,12 @@ class AppManager(object):
 
             For initial deployment (all actors on the current node)
         """
-        app = None
-        try:
-            app = self.applications[application_id]
-        except:
+        if application_id not in self.applications:
             _log.debug("execute_requirements did not find app %s" % (application_id,))
             cb(status=response.CalvinResponse(False))
             return
+
+        app = self.applications[application_id]
         _log.debug("execute_requirements(app=%s)" % (self.applications[application_id],))
 
         # TODO extract groups
@@ -361,13 +360,24 @@ class AppManager(object):
             # application deployment requirements ongoing, abort
             cb(status=response.CalvinResponse(False))
             return
+
         app._org_cb = cb
         app.done_final = False
         app._collect_placement_counter = 0
         app._collect_placement_last_value = 0
         actor_placement_it = dynops.List()
         app.actor_placement = {}  # Clean placement slate
+
         _log.analyze(self._node.id, "+ APP REQ", {}, tb=True)
+        self._add_requirements_to_actors(app, actor_placement_it)
+
+        actor_placement_it.final()
+        collect_iter = dynops.Collect(actor_placement_it)
+        collect_iter.set_cb(self.collect_placement, collect_iter, app)
+        self.collect_placement(collect_iter, app)
+        _log.analyze(self._node.id, "+ DONE", {'application_id': application_id}, tb=True)
+
+    def _add_requirements_to_actors(self, app, actor_placement_it):
         for actor_id in app.get_actors():
             if actor_id not in self._node.am.actors.keys():
                 _log.debug("Only apply requirements to local actors")
@@ -376,11 +386,6 @@ class AppManager(object):
             actor_req = self.actor_requirements(app, actor_id).set_name("Actor" + actor_id)
             actor_placement_it.append((actor_id, actor_req), trigger_iter=actor_req)
             _log.analyze(self._node.id, "+ ACTOR REQ DONE", {'actor_id': actor_id}, tb=True)
-        actor_placement_it.final()
-        collect_iter = dynops.Collect(actor_placement_it)
-        collect_iter.set_cb(self.collect_placement, collect_iter, app)
-        self.collect_placement(collect_iter, app)
-        _log.analyze(self._node.id, "+ DONE", {'application_id': application_id}, tb=True)
 
     def actor_requirements(self, app, actor_id):
         if actor_id not in self._node.am.list_actors():
@@ -416,6 +421,7 @@ class AppManager(object):
                 except:
                     _log.error("actor_requirements one req failed for %s!!!" % actor_id, exc_info=True)
                     # FIXME how to handle failed requirements, now we drop it
+
         return_iter = dynops.Intersection(*intersection_iters).set_name("SActor" + actor_id)
         if difference_iters:
             return_iter = dynops.Difference(return_iter, *difference_iters).set_name("SActor" + actor_id)
