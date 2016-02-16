@@ -576,7 +576,16 @@ class Actor(object):
         for port in state['outports']:
             # Uses setdefault to support shadow actor
             self.outports.setdefault(port, actorport.OutPort(port, self))._set_state(state['outports'][port])
-        self._component_members= set(state['_component_members'])
+        self._component_members = set(state['_component_members'])
+
+    def get_port_state(self, port_id):
+        for port in self.inports.values():
+            if port.id == port_id:
+                return port.fifo._state()
+        for port in self.outports.values():
+            if port.id == port_id:
+                return port.fifo._state()
+        raise Exception("No port with id: %s" % port_id)
 
     # TODO verify status should only allow reading connections when and after being fully connected (enabled)
     @verify_status([STATUS.ENABLED, STATUS.READY, STATUS.PENDING])
@@ -621,7 +630,7 @@ class Actor(object):
         if not isinstance(actor_ids, (set, list, tuple)):
             actor_ids = [actor_ids]
         self._component_members -= set(actor_ids)
-        
+
     def part_of_component(self):
         return len(self._component_members - set([self.id]))>0
 
@@ -651,7 +660,7 @@ class ShadowActor(Actor):
                  disable_state_checks=False, actor_id=None):
         self.inport_names = []
         self.outport_names = []
-        super(ShadowActor, self).__init__(actor_type, name, allow_invalid_transitions=allow_invalid_transitions, 
+        super(ShadowActor, self).__init__(actor_type, name, allow_invalid_transitions=allow_invalid_transitions,
                                             disable_transition_checks=disable_transition_checks,
                                             disable_state_checks=disable_state_checks, actor_id=actor_id)
 
