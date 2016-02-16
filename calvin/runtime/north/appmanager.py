@@ -452,35 +452,53 @@ class AppManager(object):
     def _app_requirements(self, app):
         _log.debug("_app_requirements(app=%s)" % (app,))
         _log.analyze(self._node.id, "+ ACTOR PLACEMENT", {'placement': app.actor_placement}, tb=True)
-        status = response.CalvinResponse(True)
-        if any([not n for n in app.actor_placement.values()]) or len(app.actors) > len(app.actor_placement):
-            # At least one actor have no required placement
-            # Let them stay on this node
-            for actor_id in [a for a in app.actors if a not in app.actor_placement]:
-                app.actor_placement[actor_id] = set([self._node.id])
-            # Status will indicate success, but be different than the normal OK code
-            status = response.CalvinResponse(response.CREATED)
-            _log.analyze(self._node.id, "+ MISS PLACEMENT", {'app_id': app.id, 'placement': app.actor_placement},
-                         tb=True)
+
+        status = self._update_actors_without_requirements(app)
+        status = status if status else response.CalvinResponse(True)
 
         # Collect an actor by actor matrix stipulating a weighting 0.0 - 1.0 for their connectivity
         actor_ids, actor_matrix = self._actor_connectivity(app)
+        node_ids = self._possible_nodes(app)
+        self._update_actor_placements(app, node_ids)
 
-        # Get list of all possible nodes
-        node_ids = set([])
-        for possible_nodes in app.actor_placement.values():
-            node_ids |= possible_nodes
-        node_ids = list(node_ids)
-        node_ids = [n for n in node_ids if not isinstance(n, dynops.InfiniteElement)]
-        for actor_id, possible_nodes in app.actor_placement.iteritems():
-            if any([isinstance(n, dynops.InfiniteElement) for n in possible_nodes]):
-                app.actor_placement[actor_id] = node_ids
         _log.analyze(self._node.id, "+ ACTOR MATRIX",
                      {'actor_ids': actor_ids, 'actor_matrix': actor_matrix,
                       'node_ids': node_ids, 'placement': app.actor_placement},
                      tb=True)
 
-        # Weight the actors possible placement with their connectivity matrix
+        weighted_actor_placement = self._weighted_actor_placement(app, node_ids, actor_ids, actor_matrix)
+        self._migrate_actors_to_nodes(app, weighted_actor_placement)
+
+        app._org_cb(status=status, placement=weighted_actor_placement)
+        del app._org_cb
+        _log.analyze(self._node.id, "+ DONE", {'app_id': app.id}, tb=True)
+
+    def _update_actors_without_requirements(self, app):
+        if any([not n for n in app.actor_placement.values()]) or len(app.actors) > len(app.actor_placement):
+            # At least one actor have no required placement
+            # Let them stay on this node
+            for actor_id in [a for a in app.actors if a not in app.actor_placement]:
+                app.actor_placement[actor_id] = set([self._node.id])
+            _log.analyze(self._node.id, "+ MISS PLACEMENT", {'app_id': app.id, 'placement': app.actor_placement},
+                         tb=True)
+            # Status will indicate success, but be different than the normal OK code
+            return response.CalvinResponse(response.CREATED)
+
+    def _possible_nodes(self, app):
+        """Returns list of all possible nodes"""
+        node_ids = set([])
+        for possible_nodes in app.actor_placement.values():
+            node_ids |= possible_nodes
+        node_ids = list(node_ids)
+        return [n for n in node_ids if not isinstance(n, dynops.InfiniteElement)]
+
+    def _update_actor_placements(self, app, node_ids):
+        for actor_id, possible_nodes in app.actor_placement.iteritems():
+            if any([isinstance(n, dynops.InfiniteElement) for n in possible_nodes]):
+                app.actor_placement[actor_id] = node_ids
+
+    def _weighted_actor_placement(self, app, node_ids, actor_ids, actor_matrix):
+        """Weight the actors possible placement with their connectivity matrix"""
         weighted_actor_placement = {}
         for actor_id in actor_ids:
             # actor matrix is symmetric, so independent if read horizontal or vertical
@@ -496,14 +514,13 @@ class AppManager(object):
             _log.analyze(self._node.id, "+ WEIGHTS", {'actor_id': actor_id, 'weights': weights})
             weighted_actor_placement[actor_id] = node_ids[weights.index(max(weights))]
 
+        return weighted_actor_placement
+
+    def _migrate_actors_to_nodes(self, app, weighted_actor_placement):
         for actor_id, node_id in weighted_actor_placement.iteritems():
             # TODO could add callback to try another possible node if the migration fails
             _log.debug("Actor deployment %s \t-> %s" % (app.actors[actor_id], node_id))
             self._node.am.migrate(actor_id, node_id)
-
-        app._org_cb(status=status, placement=weighted_actor_placement)
-        del app._org_cb
-        _log.analyze(self._node.id, "+ DONE", {'app_id': app.id}, tb=True)
 
     def _actor_connectivity(self, app):
         """ Matrix of weights between actors how close they want to be
