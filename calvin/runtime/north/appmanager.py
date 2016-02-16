@@ -530,10 +530,9 @@ class AppManager(object):
             Currently any nodes that are connected gets 0.5, and
             diagonal is 1:s
         """
-        list_actors = app.get_actors()
-        l = len(list_actors)
-        actor_matrix = [[0 for x in range(l)] for x in range(l)]
-        for actor_id in list_actors:
+        actors = app.get_actors()
+        actor_matrix = [[0 for x in range(len(actors))] for x in range(len(actors))]
+        for actor_id in actors:
             connections = self._node.am.connections(actor_id)
             for p in connections['inports'].values():
                 try:
@@ -542,11 +541,13 @@ class AppManager(object):
                     # Only work while the peer still is local
                     # TODO get it from storage
                     continue
-                actor_matrix[list_actors.index(actor_id)][list_actors.index(peer_actor_id)] = 0.5
-                actor_matrix[list_actors.index(peer_actor_id)][list_actors.index(actor_id)] = 0.5
-        for i in range(l):
+                actor_matrix[actors.index(actor_id)][actors.index(peer_actor_id)] = 0.5
+                actor_matrix[actors.index(peer_actor_id)][actors.index(actor_id)] = 0.5
+
+        for i in range(len(actors)):
             actor_matrix[i][i] = 1
-        return (list_actors, actor_matrix)
+
+        return (actors, actor_matrix)
 
     # Remigration
 
