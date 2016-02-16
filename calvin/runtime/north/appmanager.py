@@ -894,22 +894,29 @@ class Deployer(object):
         self._deploy_cont()
 
     def _deploy_cont(self):
+        self._add_components()
+        self._set_port_properties()
+        self._setup_connections()
+
+        self.node.app_manager.finalize(self.app_id, migrate=True if self.deploy_info else False,
+                                       cb=CalvinCB(self.cb, deployer=self))
+
+    def _add_components(self):
         for component_name, actor_names in self.components.iteritems():
             actor_ids = [self.actor_map[n] for n in actor_names]
             for actor_id in actor_ids:
                 self.node.am.actors[actor_id].component_add(actor_ids)
 
+    def _set_port_properties(self):
         for src, dst_list in self.deployable['connections'].iteritems():
             if len(dst_list) > 1:
                 src_name, src_port = src.split('.')
                 self.set_port_property(src_name, 'out', src_port, 'fanout', len(dst_list))
 
+    def _setup_connections(self):
         for src, dst_list in self.deployable['connections'].iteritems():
             src_actor, src_port = src.split('.')
             for dst in dst_list:
                 dst_actor, dst_port = dst.split('.')
                 c = (src_actor, src_port, dst_actor, dst_port)
                 self.connectid(c)
-
-        self.node.app_manager.finalize(self.app_id, migrate=True if self.deploy_info else False,
-                                       cb=CalvinCB(self.cb, deployer=self))
