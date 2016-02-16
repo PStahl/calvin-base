@@ -308,19 +308,29 @@ class Difference(DynOps):
     def op(self):
         _log.debug("%s.next()" % self.__str__())
         if self.zero_set:
-            _log.debug("%s.next() REMOVE INFINITE" % self.__str__())
-            raise StopIteration
+            self._remove_infinite()
         if all(self.final.values()):
-            _log.debug("%s.next() REMOVE THESE %s" % (self.__str__(), str(self.remove)))
-            # All remove values obtained just filter first
-            # The first's exception are exposed
-            while True:
-                n = self.first.next()
-                _log.debug("%s.next() = %s" % (self.__str__(), str(n)))
-                if n not in self.remove:
-                    self.remove.add(n)  # Enforce set behaviour
-                    _log.debug("%s.next() ACTUAL = %s" % (self.__str__(), str(n)))
-                    return n
+            return self._remove()
+
+        return self._iterate_values()
+
+    def _remove_infinite(self):
+        _log.debug("%s.next() REMOVE INFINITE" % self.__str__())
+        raise StopIteration
+
+    def _remove(self):
+        _log.debug("%s.next() REMOVE THESE %s" % (self.__str__(), str(self.remove)))
+        # All remove values obtained just filter first
+        # The first's exception are exposed
+        while True:
+            n = self.first.next()
+            _log.debug("%s.next() = %s" % (self.__str__(), str(n)))
+            if n not in self.remove:
+                self.remove.add(n)  # Enforce set behaviour
+                _log.debug("%s.next() ACTUAL = %s" % (self.__str__(), str(n)))
+                return n
+
+    def _iterate_values(self):
         paused = False
         for v in self.iters:
             try:
@@ -330,6 +340,7 @@ class Difference(DynOps):
                 paused = True
             except StopIteration:
                 self.final[id(v)] = True
+
         if paused:
             raise PauseIteration
         else:
