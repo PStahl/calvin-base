@@ -776,72 +776,86 @@ class Deployer(object):
                 return
             except dynops.PauseIteration:
                 return
+
             if 'shadow_actor' in desc:
-                _log.analyze(self.node.id, "+ SHADOW ACTOR", {'name': name})
-                # It was a normal primitive shadow actor, just instanciate
-                req = self.get_req(name)
-                info = self.deployable['actors'][name]
-                actor_id = self.instantiate_primitive(name, info['actor_type'], info['args'], req, info['signature'])
-                if not actor_id:
-                    _log.error("Second phase, could not make shadow actor %s!" % info['actor_type'])
-                self.actor_map[name] = actor_id
-                self.node.app_manager.add(self.app_id, actor_id)
+                self._deploy_unhandled_shadow_actor(name)
             elif 'shadow_component' in desc:
-                _log.analyze(self.node.id, "+ SHADOW COMPONENT", {'name': name})
-                # A component that needs to be broken up into individual primitive actors
-                # First get the info and remove the component
-                req = self.get_req(name)
-                info = self.deployable['actors'][name]
-                self.deployable['actors'].pop(name)
-                # Then add the new primitive actors
-                for actor_name, actor_desc in desc['component']['structure']['actors'].iteritems():
-                    args = actor_desc['args'].iteritems()
-                    args = {k: v[1] if v[0] == 'VALUE' else info['args'][v[1]] for k, v in args}
+                self._deploy_unhandled_shadow_component(desc, name)
 
-                    connections = desc['component']['structure']['connections']
-                    inports = [c['dst_port'] for c in connections if c['dst'] == actor_name]
-                    outports = [c['src_port'] for c in connections if c['src'] == actor_name]
+    def _deploy_unhandled_shadow_actor(self, name):
+        """It was a normal primitive shadow actor, just instanciate"""
+        _log.analyze(self.node.id, "+ SHADOW ACTOR", {'name': name})
+        req = self.get_req(name)
+        info = self.deployable['actors'][name]
+        actor_id = self.instantiate_primitive(name, info['actor_type'], info['args'], req, info['signature'])
 
-                    sign_desc = {'is_primitive': True,
-                                 'actor_type': actor_desc['actor_type'],
-                                 'inports': inports[:],
-                                 'outports': outports[:]}
-                    sign = GlobalStore.actor_signature(sign_desc)
-                    self.deployable['actors'][name + ":" + actor_name] = {'args': args,
-                                                                          'actor_type': actor_desc['actor_type'],
-                                                                          'signature_desc': sign_desc,
-                                                                          'signature': sign}
-                    # Replace component connections with actor connection
-                    #   outports
-                    comp_outports = [(c['dst_port'], c['src_port']) for c in connections if c['src'] == actor_name and c['dst'] == "."]
-                    for c_port, a_port in comp_outports:
-                        if (name + "." + c_port) in self.deployable['connections']:
-                            self.deployable['connections'][name + ":" + actor_name + "." + a_port] = \
-                                self.deployable['connections'].pop(name + "." + c_port)
-                    #   inports
-                    comp_inports = [(c['src_port'], c['dst_port']) for c in connections if c['dst'] == actor_name and c['src'] == "."]
-                    for outport, ports in self.deployable['connections'].iteritems():
-                        for c_inport, a_inport in comp_inports:
-                            if (name + "." + c_inport) in ports:
-                                ports.remove(name + "." + c_inport)
-                                ports.append(name + ":" + actor_name + "." + a_inport)
-                    _log.analyze(self.node.id, "+ REPLACED PORTS", {'comp_outports': comp_outports,
-                                                                    'comp_inports': comp_inports,
-                                                                    'actor_name': actor_name,
-                                                                    'connections': self.deployable['connections']})
-                    # Add any new component internal connections (enough with outports)
-                    for connection in connections:
-                        if connection['src'] == actor_name and connection['src_port'] in outports and connection['dst'] != ".":
-                            self.deployable['connections'].setdefault(
-                                name + ":" + actor_name + "." + connection['src_port'], []).append(
-                                    name + ":" + connection['dst'] + "." + connection['dst_port'])
-                    _log.analyze(self.node.id, "+ ADDED PORTS", {'connections': self.deployable['connections']})
-                    # Instanciate it
-                    actor_id = self.instantiate_primitive(name + ":" + actor_name, actor_desc['actor_type'], args, req, sign)
-                    if not actor_id:
-                        _log.error("Third phase, could not make shadow actor %s!" % info['actor_type'])
-                    self.actor_map[name + ":" + actor_name] = actor_id
-                    self.node.app_manager.add(self.app_id, actor_id)
+        if not actor_id:
+            _log.error("Second phase, could not make shadow actor %s!" % info['actor_type'])
+
+        self.actor_map[name] = actor_id
+        self.node.app_manager.add(self.app_id, actor_id)
+
+    def _deploy_unhandled_shadow_component(self, desc, name):
+        """A component that needs to be broken up into individual primitive actors
+        First get the info and remove the component
+        """
+        _log.analyze(self.node.id, "+ SHADOW COMPONENT", {'name': name})
+        req = self.get_req(name)
+        info = self.deployable['actors'][name]
+        self.deployable['actors'].pop(name)
+        # Then add the new primitive actors
+        for actor_name, actor_desc in desc['component']['structure']['actors'].iteritems():
+            args = actor_desc['args'].iteritems()
+            args = {k: v[1] if v[0] == 'VALUE' else info['args'][v[1]] for k, v in args}
+
+            connections = desc['component']['structure']['connections']
+            inports = [c['dst_port'] for c in connections if c['dst'] == actor_name]
+            outports = [c['src_port'] for c in connections if c['src'] == actor_name]
+
+            sign_desc = {
+                'is_primitive': True,
+                'actor_type': actor_desc['actor_type'],
+                'inports': inports[:],
+                'outports': outports[:]
+            }
+            sign = GlobalStore.actor_signature(sign_desc)
+            self.deployable['actors'][name + ":" + actor_name] = {
+                'args': args,
+                'actor_type': actor_desc['actor_type'],
+                'signature_desc': sign_desc,
+                'signature': sign
+            }
+            # Replace component connections with actor connection
+            #   outports
+            comp_outports = [(c['dst_port'], c['src_port']) for c in connections if c['src'] == actor_name and c['dst'] == "."]
+            for c_port, a_port in comp_outports:
+                if (name + "." + c_port) in self.deployable['connections']:
+                    self.deployable['connections'][name + ":" + actor_name + "." + a_port] = \
+                        self.deployable['connections'].pop(name + "." + c_port)
+            #   inports
+            comp_inports = [(c['src_port'], c['dst_port']) for c in connections if c['dst'] == actor_name and c['src'] == "."]
+            for outport, ports in self.deployable['connections'].iteritems():
+                for c_inport, a_inport in comp_inports:
+                    if (name + "." + c_inport) in ports:
+                        ports.remove(name + "." + c_inport)
+                        ports.append(name + ":" + actor_name + "." + a_inport)
+            _log.analyze(self.node.id, "+ REPLACED PORTS", {'comp_outports': comp_outports,
+                                                            'comp_inports': comp_inports,
+                                                            'actor_name': actor_name,
+                                                            'connections': self.deployable['connections']})
+            # Add any new component internal connections (enough with outports)
+            for connection in connections:
+                if connection['src'] == actor_name and connection['src_port'] in outports and connection['dst'] != ".":
+                    self.deployable['connections'].setdefault(
+                        name + ":" + actor_name + "." + connection['src_port'], []).append(
+                            name + ":" + connection['dst'] + "." + connection['dst_port'])
+            _log.analyze(self.node.id, "+ ADDED PORTS", {'connections': self.deployable['connections']})
+            # Instanciate it
+            actor_id = self.instantiate_primitive(name + ":" + actor_name, actor_desc['actor_type'], args, req, sign)
+            if not actor_id:
+                _log.error("Third phase, could not make shadow actor %s!" % info['actor_type'])
+            self.actor_map[name + ":" + actor_name] = actor_id
+            self.node.app_manager.add(self.app_id, actor_id)
 
     def deploy(self):
         """
