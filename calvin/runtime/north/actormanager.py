@@ -15,12 +15,12 @@
 # limitations under the License.
 
 from calvin.utilities.calvinlogger import get_logger
-from calvin.utilities.calvin_callback import CalvinCB
 import calvin.utilities.calvinresponse as response
 from calvin.actor.actor_factory import ActorFactory
 from calvin.actor.actor import ShadowActor
 from calvin.actor.connection_handler import ConnectionHandler
 from calvin.actor.requirements import ActorRequirements
+from calvin.runtime.north.migrator import Migrator
 
 _log = get_logger(__name__)
 
@@ -40,6 +40,7 @@ class ActorManager(object):
         self.node = node
         self.factory = factory if factory else ActorFactory(node)
         self.connection_handler = connection_handler if connection_handler else ConnectionHandler(node)
+        self.migrator = Migrator(self.node, self)
 
     def new(self, actor_type, args, state=None, prev_connections=None, connection_list=None, callback=None,
             signature=None):
@@ -109,40 +110,7 @@ class ActorManager(object):
 
     def migrate(self, actor_id, node_id, callback=None):
         """ Migrate an actor actor_id to peer node node_id """
-        if actor_id not in self.actors:
-            # Can only migrate actors from our node
-            if callback:
-                callback(status=response.CalvinResponse(False))
-            return
-        if node_id == self.node.id:
-            # No need to migrate to ourself
-            if callback:
-                callback(status=response.CalvinResponse(True))
-            return
-
-        actor = self.actors[actor_id]
-        actor._migrating_to = node_id
-        actor.will_migrate()
-        actor_type = actor._type
-        ports = actor.connections(self.node.id)
-        # Disconnect ports and continue in _migrate_disconnect
-        self.node.pm.disconnect(callback=CalvinCB(self._migrate_disconnected,
-                                                  actor=actor,
-                                                  actor_type=actor_type,
-                                                  ports=ports,
-                                                  node_id=node_id,
-                                                  callback=callback),
-                                actor_id=actor_id)
-        self.node.control.log_actor_migrate(actor_id, node_id)
-
-    def _migrate_disconnected(self, actor, actor_type, ports, node_id, status, callback = None, **state):
-        """ Actor disconnected, continue migration """
-        if status:
-            state = actor.state()
-            self.destroy(actor.id)
-            self.node.proto.actor_new(node_id, callback, actor_type, state, ports)
-        elif callback:  # FIXME handle errors!!!
-            callback(status=status)
+        self.migrator.migrate_actor(actor_id, node_id, callback)
 
     def peernew_to_local_cb(self, reply, **kwargs):
         if kwargs['actor_id'] == reply:
