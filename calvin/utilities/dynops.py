@@ -421,73 +421,91 @@ class Map(DynOps):
     def _op(self, eager=False):
         self.during_next = True
         while True:
-            active = False
-            for v in self.iters:
-                if not self.final[id(v)]:
-                    try:
-                        func_name = self.func.__name__
-                        _log.debug("Map{}(func={}) Next iter: {}".format(self.name, func_name, str(v)))
-                        e = v.next()
-                        _log.debug("Map{}(func={}) Next in: {}".format(self.name, func_name, e))
-                        self.drawn[id(v)].append(e)
-                        active = True
-                    except PauseIteration:
-                        pass
-                    except StopIteration:
-                        self.final[id(v)] = True
-                    except Exception as e:
-                        _log.exception("Map function failed")
-                        raise e
+            active = self._iter_values()
+
             try:
                 l = min([len(self.drawn[id(i)]) for i in self.iters if not self.final[id(i)]])
             except ValueError:
                 l = 0
             func_name = self.func.__name__
             _log.debug("Map{}(func={}) Loop: {}, Final:{}".format(self.name, func_name, l, self.final.values()))
-            # Execute map function l times
-            for i in range(l):
-                try:
-                    self.func(self.out_iter, self.kwargs, [self.final[id(i)] for i in self.iters],
-                              *[None if self.final[id(i)] else self.drawn[id(i)].pop(0) for i in self.iters])
-                except PauseIteration:
-                    break
-                except StopIteration:
-                    self.final = {id(k): True for k in self.iters}
-                except Exception as e:
-                    _log.exception("Map function failed")
-                    raise e
-            # If no more elements to apply map on, then one final map execution to allow the map function to finalize
+
+            self._execute_map(l)
             if all(self.final.values()):
-                try:
-                    self.func(self.out_iter, self.kwargs, self.final.values(),
-                              *([None] * len(self.iters)))
-                except PauseIteration:
-                    pass
-                except StopIteration:
-                    pass
-                except Exception as e:
-                    _log.exception("Map function failed")
-                    raise e
+                # If no more elements to apply map on, then one final map execution to allow the map function to
+                # finalize
+                self._reexecute_map()
+
             # If lazy break out of while True with the return value (or exception) otherwise break when no progress
             if not eager:
-                _log.debug("Map%s(func=%s) TRY OUT %s" % (self.name, self.func.__name__, self.out_iter))
-                try:
-                    e = self.out_iter.next()
-                except StopIteration:
-                    _log.debug("Map%s(func=%s) GOT STOP" % (self.name, self.func.__name__))
-                    self.during_next = False
-                    raise StopIteration
-                except PauseIteration:
-                    _log.debug("Map%s(func=%s) GOT PAUSE" % (self.name, self.func.__name__))
-                    self.during_next = False
-                    raise PauseIteration
-                _log.debug("Map%s(func=%s) GOT OUT %s" % (self.name, self.func.__name__, e))
-                self.during_next = False
-                return e
+                return self._try_out()
+
             if not active or all(self.final.values()):
                 # Reach here only when eager, any exception will do to break loop in trig method
                 self.during_next = False
                 raise Exception()
+
+    def _iter_values(self):
+        active = False
+        for v in self.iters:
+            if not self.final[id(v)]:
+                try:
+                    func_name = self.func.__name__
+                    _log.debug("Map{}(func={}) Next iter: {}".format(self.name, func_name, str(v)))
+                    e = v.next()
+                    _log.debug("Map{}(func={}) Next in: {}".format(self.name, func_name, e))
+                    self.drawn[id(v)].append(e)
+                    active = True
+                except PauseIteration:
+                    pass
+                except StopIteration:
+                    self.final[id(v)] = True
+                except Exception as e:
+                    _log.exception("Map function failed")
+                    raise e
+        return active
+
+    def _execute_map(self, length):
+        # Execute map function l times
+        for i in range(length):
+            try:
+                self.func(self.out_iter, self.kwargs, [self.final[id(i)] for i in self.iters],
+                          *[None if self.final[id(i)] else self.drawn[id(i)].pop(0) for i in self.iters])
+            except PauseIteration:
+                break
+            except StopIteration:
+                self.final = {id(k): True for k in self.iters}
+            except Exception as e:
+                _log.exception("Map function failed")
+                raise e
+
+    def _reexecute_map(self):
+        try:
+            self.func(self.out_iter, self.kwargs, self.final.values(),
+                      *([None] * len(self.iters)))
+        except PauseIteration:
+            pass
+        except StopIteration:
+            pass
+        except Exception as e:
+            _log.exception("Map function failed")
+            raise e
+
+    def _try_out(self):
+        _log.debug("Map%s(func=%s) TRY OUT %s" % (self.name, self.func.__name__, self.out_iter))
+        try:
+            e = self.out_iter.next()
+        except StopIteration:
+            _log.debug("Map%s(func=%s) GOT STOP" % (self.name, self.func.__name__))
+            self.during_next = False
+            raise StopIteration
+        except PauseIteration:
+            _log.debug("Map%s(func=%s) GOT PAUSE" % (self.name, self.func.__name__))
+            self.during_next = False
+            raise PauseIteration
+        _log.debug("Map%s(func=%s) GOT OUT %s" % (self.name, self.func.__name__, e))
+        self.during_next = False
+        return e
 
     def op(self):
         self.during_next = True
