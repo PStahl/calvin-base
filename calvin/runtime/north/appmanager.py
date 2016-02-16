@@ -555,36 +555,49 @@ class AppManager(object):
         """ Migrate actors of app app_id based on newly supplied deploy_info.
             Optional argument move controls if actors prefers to stay when possible.
         """
-        self.storage.get_application(app_id, cb=CalvinCB(self._migrate_got_app,
+        self.storage.get_application(app_id, cb=CalvinCB(self._migrate_app_actors,
                                                          app_id=app_id, deploy_info=deploy_info,
                                                          move=move, cb=cb))
 
-    def _migrate_got_app(self, key, value, app_id, deploy_info, move, cb):
+    def _migrate_app_actors(self, key, value, app_id, deploy_info, move, cb):
         if not value:
             if cb:
                 cb(status=response.CalvinResponse(response.NOT_FOUND))
             return
+
         app = Application(app_id, value['name'], value['origin_node_id'], self._node.am,
                           actors=value['actors_name_map'], deploy_info=deploy_info)
         app.group_components()
         app._migrated_actors = {a: None for a in app.actors}
+        self._migrate_actors(app, move, cb)
+
+    def _migrate_actors(self, app, move, cb):
         for actor_id, actor_name in app.actors.iteritems():
             req = app.get_req(actor_name)
-            if req is None:
-                _log.analyze(self._node.id, "+ NO REQ", {'actor_id': actor_id, 'actor_name': actor_name})
-                # No requirement then leave as is.
-                self._migrated_cb(response.CalvinResponse(True), app, actor_id, cb)
-                continue
-            if actor_id in self._node.am.actors:
-                _log.analyze(self._node.id, "+ OWN ACTOR", {'actor_id': actor_id, 'actor_name': actor_name})
-                self._node.am.update_requirements(actor_id, req, False, move,
-                                                  callback=CalvinCB(self._migrated_cb, app=app,
-                                                                    actor_id=actor_id, cb=cb))
+            if not req:
+                self._migrate_actor_without_req(app, actor_id, actor_name, cb)
+            elif actor_id in self._node.am.actors:
+                self._migrate_own_actor(app, actor_id, actor_name, req, cb, move)
             else:
-                _log.analyze(self._node.id, "+ OTHER NODE", {'actor_id': actor_id, 'actor_name': actor_name})
-                self.storage.get_actor(actor_id, cb=CalvinCB(self._migrate_from_rt, app=app,
-                                                             actor_id=actor_id, req=req,
-                                                             move=move, cb=cb))
+                self._migrate_other_actor(self, app, actor_id, actor_name, req, cb, move)
+
+    def _migrate_actor_without_req(self, app, actor_id, actor_name, cb):
+        """Actor had no requirements, do not migrate"""
+        _log.analyze(self._node.id, "+ NO REQ", {'actor_id': actor_id, 'actor_name': actor_name})
+        # No requirement then leave as is.
+        self._migrated_cb(response.CalvinResponse(True), app, actor_id, cb)
+
+    def _migrate_own_actor(self, app, actor_id, actor_name, req, cb, move):
+        """Migrate actor on this node"""
+        _log.analyze(self._node.id, "+ OWN ACTOR", {'actor_id': actor_id, 'actor_name': actor_name})
+        callback = CalvinCB(self._migrated_cb, app=app, actor_id=actor_id, cb=cb)
+        self._node.am.update_requirements(actor_id, req, False, move, callback)
+
+    def _migrate_other_actor(self, app, actor_id, actor_name, req, cb, move):
+        """Migrate actor on other node"""
+        _log.analyze(self._node.id, "+ OTHER NODE", {'actor_id': actor_id, 'actor_name': actor_name})
+        callback = CalvinCB(self._migrate_from_rt, app=app, actor_id=actor_id, req=req, move=move, cb=cb)
+        self.storage.get_actor(actor_id, cb=callback)
 
     def _migrate_from_rt(self, key, value, app, actor_id, req, move, cb):
         if not value:
