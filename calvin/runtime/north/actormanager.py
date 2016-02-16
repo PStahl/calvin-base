@@ -14,14 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from calvin.utilities import dynops
-from calvin.runtime.south.plugins.async import async
 from calvin.utilities.calvinlogger import get_logger
 from calvin.utilities.calvin_callback import CalvinCB
 import calvin.utilities.calvinresponse as response
 from calvin.actor.actor_factory import ActorFactory
 from calvin.actor.actor import ShadowActor
 from calvin.actor.connection_handler import ConnectionHandler
+from calvin.actor.requirements import ActorRequirements
 
 _log = get_logger(__name__)
 
@@ -105,83 +104,10 @@ class ActorManager(object):
 
     def update_requirements(self, actor_id, requirements, extend=False, move=False, callback=None):
         """ Update requirements and trigger a potential migration """
-        if actor_id not in self.actors:
-            # Can only migrate actors from our node
-            _log.analyze(self.node.id, "+ NO ACTOR", {'actor_id': actor_id})
-            if callback:
-                callback(status=response.CalvinResponse(False))
-            return
-        if not isinstance(requirements, (list, tuple)):
-            # requirements need to be list
-            _log.analyze(self.node.id, "+ NO REQ LIST", {'actor_id': actor_id})
-            if callback:
-                callback(status=response.CalvinResponse(response.BAD_REQUEST))
-            return
-        actor = self.actors[actor_id]
-        actor._collect_placement_counter = 0
-        actor._collect_placement_last_value = 0
-        actor._collect_placement_cb = None
-        actor.requirements_add(requirements, extend)
-        node_iter = self.node.app_manager.actor_requirements(None, actor_id)
-        possible_placements = set([])
-        done = [False]
-        node_iter.set_cb(self._update_requirements_placements, node_iter, actor_id, possible_placements,
-                         move=move, cb=callback, done=done)
-        _log.analyze(self.node.id, "+ CALL CB", {'actor_id': actor_id, 'node_iter': str(node_iter)})
-        # Must call it since the triggers might already have released before cb set
-        self._update_requirements_placements(node_iter, actor_id, possible_placements,
-                                             move=move, cb=callback, done=done)
-        _log.analyze(self.node.id, "+ END", {'actor_id': actor_id, 'node_iter': str(node_iter)})
+        requirements = ActorRequirements(self.node, self, requirements, actor_id)
+        requirements.fulfill(self.actors, extend, move, callback)
 
-    def _update_requirements_placements(self, node_iter, actor_id, possible_placements, done, move=False, cb=None):
-        _log.analyze(self.node.id, "+ BEGIN", {}, tb=True)
-        actor = self.actors[actor_id]
-        if actor._collect_placement_cb:
-            actor._collect_placement_cb.cancel()
-            actor._collect_placement_cb = None
-        if done[0]:
-            return
-        try:
-            while True:
-                _log.analyze(self.node.id, "+ ITER", {})
-                node_id = node_iter.next()
-                possible_placements.add(node_id)
-        except dynops.PauseIteration:
-            _log.analyze(self.node.id, "+ PAUSED",
-                    {'counter': actor._collect_placement_counter,
-                     'last_value': actor._collect_placement_last_value,
-                     'diff': actor._collect_placement_counter - actor._collect_placement_last_value})
-            # FIXME the dynops should be self triggering, but is not...
-            # This is a temporary fix by keep trying
-            delay = 0.0 if actor._collect_placement_counter > actor._collect_placement_last_value + 100 else 0.2
-            actor._collect_placement_counter += 1
-            actor._collect_placement_cb = async.DelayedCall(delay, self._update_requirements_placements,
-                                                            node_iter, actor_id, possible_placements, done=done,
-                                                            move=move, cb=cb)
-            return
-        except StopIteration:
-            # all possible actor placements derived
-            _log.analyze(self.node.id, "+ ALL", {})
-            done[0] = True
-            if move and len(possible_placements)>1:
-                possible_placements.discard(self.node.id)
-            if not possible_placements:
-                if cb:
-                    cb(status=response.CalvinResponse(False))
-                return
-            if self.node.id in possible_placements:
-                # Actor could stay, then do that
-                if cb:
-                    cb(status=response.CalvinResponse(True))
-                return
-            # TODO do a better selection between possible nodes
-            self.migrate(actor_id, possible_placements.pop(), callback=cb)
-            _log.analyze(self.node.id, "+ END", {})
-        except:
-            _log.exception("actormanager:_update_requirements_placements")
-
-
-    def migrate(self, actor_id, node_id, callback = None):
+    def migrate(self, actor_id, node_id, callback=None):
         """ Migrate an actor actor_id to peer node node_id """
         if actor_id not in self.actors:
             # Can only migrate actors from our node
