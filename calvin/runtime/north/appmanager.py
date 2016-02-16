@@ -706,29 +706,36 @@ class Deployer(object):
     def set_port_property(self, actor, port_type, port_name, port_property, value):
         self.node.am.set_port_property(self.actor_map[actor], port_type, port_name, port_property, value)
 
-    def select_actor(self, out_iter, kwargs, final, comp_name_desc):
+    def _select_actor(self, out_iter, kwargs, final, comp_name_desc):
         _log.analyze(self.node.id, "+", {'comp_name_desc': comp_name_desc}, tb=True)
-        if final[0] and not kwargs['done']:
-            kwargs['done'] = True
+        final = final[0] if final else False
+        done = kwargs.get('done', False)
+        if final and not done:
             for name, desc_list in kwargs['priority'].iteritems():
                 if desc_list:
                     out_iter.append(desc_list[0])
             out_iter.final()
             return
+
         desc = comp_name_desc[1]
-        try:
-            # List of (found, is_primitive, info)
-            actors = desc['component']['structure']['actors'].values()
-            actor_types = [ActorStore().lookup(actor['actor_type']) for actor in actors]
-        except KeyError:
+        actor_types = []
+
+        if 'component' not in desc:
             actor_types = []
             # Not a component, shadow actor candidate, likely
             kwargs['priority'][comp_name_desc[0]].insert(0, comp_name_desc)
             comp_name_desc[1]['shadow_actor'] = True
             return
+        else:
+            actors = desc['component']['structure']['actors'].values()
+
+        try:
+            # List of (found, is_primitive, info)
+            actor_types = [ActorStore().lookup(actor['actor_type']) for actor in actors]
         except Exception as e:
             _log.exception("select_actor desc: %s" % desc)
             raise e
+
         if all([a[0] and a[1] for a in actor_types]):
             # All found and primitive (quite unlikely), insert after any primitive shadow actors in priority
             index = len([1 for a in kwargs['priority'][comp_name_desc[0]] if 'shadow_actor' in a[1]])
@@ -747,7 +754,7 @@ class Deployer(object):
             all_desc_iters.append((actor_name, desc_iter), trigger_iter=desc_iter)
         all_desc_iters.final()
         collect_desc_iter = dynops.Collect(all_desc_iters).set_name("collected_desc")
-        select_iter = dynops.Map(self.select_actor, collect_desc_iter, done=False,
+        select_iter = dynops.Map(self._select_actor, collect_desc_iter, done=False,
                                  priority={k: [] for k in self.deployable['actors'].keys()},
                                  eager=True).set_name("select_actor")
         select_iter.set_cb(self.deploy_unhandled_actors, select_iter)
