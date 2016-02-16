@@ -75,6 +75,10 @@ class DynOps(object):
     def inf(self):
         return "<Inf>" if self.infinite_set else ""
 
+    @property
+    def func_name(self):
+        return self.func.__name__
+
     def final_sign(self, final):
         return "#" if final else "-"
 
@@ -427,8 +431,7 @@ class Map(DynOps):
                 l = min([len(self.drawn[id(i)]) for i in self.iters if not self.final[id(i)]])
             except ValueError:
                 l = 0
-            func_name = self.func.__name__
-            _log.debug("Map{}(func={}) Loop: {}, Final:{}".format(self.name, func_name, l, self.final.values()))
+            _log.debug("Map{}(func={}) Loop: {}, Final:{}".format(self.name, self.func_name, l, self.final.values()))
 
             self._execute_map(l)
             if all(self.final.values()):
@@ -450,10 +453,9 @@ class Map(DynOps):
         for v in self.iters:
             if not self.final[id(v)]:
                 try:
-                    func_name = self.func.__name__
-                    _log.debug("Map{}(func={}) Next iter: {}".format(self.name, func_name, str(v)))
+                    _log.debug("Map{}(func={}) Next iter: {}".format(self.name, self.func_name, str(v)))
                     e = v.next()
-                    _log.debug("Map{}(func={}) Next in: {}".format(self.name, func_name, e))
+                    _log.debug("Map{}(func={}) Next in: {}".format(self.name, self.func_name, e))
                     self.drawn[id(v)].append(e)
                     active = True
                 except PauseIteration:
@@ -492,18 +494,18 @@ class Map(DynOps):
             raise e
 
     def _try_out(self):
-        _log.debug("Map%s(func=%s) TRY OUT %s" % (self.name, self.func.__name__, self.out_iter))
+        _log.debug("Map%s(func=%s) TRY OUT %s" % (self.name, self.func_name, self.out_iter))
         try:
             e = self.out_iter.next()
         except StopIteration:
-            _log.debug("Map%s(func=%s) GOT STOP" % (self.name, self.func.__name__))
+            _log.debug("Map%s(func=%s) GOT STOP" % (self.name, self.func_name))
             self.during_next = False
             raise StopIteration
         except PauseIteration:
-            _log.debug("Map%s(func=%s) GOT PAUSE" % (self.name, self.func.__name__))
+            _log.debug("Map%s(func=%s) GOT PAUSE" % (self.name, self.func_name))
             self.during_next = False
             raise PauseIteration
-        _log.debug("Map%s(func=%s) GOT OUT %s" % (self.name, self.func.__name__, e))
+        _log.debug("Map%s(func=%s) GOT OUT %s" % (self.name, self.func_name, e))
         self.during_next = False
         return e
 
@@ -526,7 +528,7 @@ class Map(DynOps):
                 s += "\n\t" + line
             s += ", "
         return "Map%s%s%s(func=%s, %s\n) out=%s" % (self.name, self.final_sign(self.out_iter._final),
-                                                    self.miss_cb_str(), self.func.__name__, s[:-2],
+                                                    self.miss_cb_str(), self.func_name, s[:-2],
                                                     self.out_iter.__str__())
 
 
