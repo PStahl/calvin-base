@@ -28,6 +28,8 @@ from calvin.runtime.south.plugins.async import async
 _log = calvinlogger.get_logger(__name__)
 
 MAX_ACTOR_DELETE_RETRIES = 10
+ADD = '+'
+REMOVE = '-'
 
 
 def component_name(name, ns):
@@ -152,6 +154,7 @@ class AppManager(object):
         self._node = node
         self.storage = node.storage
         self.applications = {}
+        self._valid_requirements_types = set([ADD, REMOVE])
 
     def new(self, name):
         application_id = calvinuuid.uuid("APP")
@@ -394,33 +397,22 @@ class AppManager(object):
 
         actor = self._node.am.actors[actor_id]
         _log.debug("actor_requirements(actor_id=%s), reqs=%s" % (actor_id, actor.requirements_get()))
+
         intersection_iters = []
         difference_iters = []
         for req in actor.requirements_get():
             if req['op'] == 'union_group':
                 # Special operation that first forms a union of a requirement's list response set
                 # To allow alternative requirements options
-                component = actor.component_members().set_name("SActor" + actor_id)
-                intersection_iters.append(self._union_requirements(req=req, app=app, actor_id=actor_id,
-                                                                   component=component))
+                intersection_iters.append(self._union_requirements(req, app, actor))
+            elif req['type'] in self._valid_requirements_types:
+                req_op = self._get_req_op(req, actor)
+                if req_op and req['type'] == ADD:
+                    intersection_iters.append(req_op)
+                elif req_op and req['type'] == REMOVE:
+                    difference_iters.appen(req_op)
             else:
-                try:
-                    _log.analyze(self._node.id, "+ REQ OP", {'op': req['op'], 'kwargs': req['kwargs']})
-                    it = req_operations[req['op']].req_op(self._node,
-                                                          actor_id=actor_id,
-                                                          component=actor.component_members(),
-                                                          **req['kwargs'])
-                    it.set_name(req['op'] + ",SActor" + actor_id)
-                    if req['type'] == '+':
-                        intersection_iters.append(it)
-                    elif req['type'] == '-':
-                        difference_iters.append(it)
-                    else:
-                        _log.error("actor_requirements unknown req type %s for %s!!!" % (req['type'], actor_id),
-                                   exc_info=True)
-                except:
-                    _log.error("actor_requirements one req failed for %s!!!" % actor_id, exc_info=True)
-                    # FIXME how to handle failed requirements, now we drop it
+                _log.error("actor_requirements unknown req type %s for %s!!!" % (req['type'], actor_id), exc_info=True)
 
         return_iter = dynops.Intersection(*intersection_iters).set_name("SActor" + actor_id)
         if difference_iters:
@@ -428,19 +420,34 @@ class AppManager(object):
 
         return return_iter
 
-    def _union_requirements(self, **state):
+    def _union_requirements(self, req, app, actor):
+        component = actor.component_members().set_name("SActor" + actor.id)
         union_iters = []
-        for union_req in state['req']['requirements']:
+        for union_req in req['requirements']:
             try:
                 union_iter = req_operations[union_req['op']].req_op(self._node,
-                                                                    actor_id=state['actor_id'],
-                                                                    component=state['component'],
+                                                                    actor_id=actor.id,
+                                                                    component=component,
                                                                     **union_req['kwargs'])
-                union_iter.set_name(union_req['op'] + ",UActor" + state['actor_id'])
+                union_iter.set_name(union_req['op'] + ",UActor" + actor.id)
                 union_iters.append(union_iter)
             except:
-                _log.error("union_requirements one req failed for %s!!!" % state['actor_id'], exc_info=True)
+                _log.error("union_requirements one req failed for %s!!!" % actor.id, exc_info=True)
         return dynops.Union(*union_iters)
+
+    def _get_req_op(self, req, actor):
+        _log.analyze(self._node.id, "+ REQ OP", {'op': req['op'], 'kwargs': req['kwargs']})
+        try:
+            it = req_operations[req['op']].req_op(self._node, actor_id=actor.id,
+                                                  component=actor.component_members(),
+                                                  **req['kwargs'])
+        except:
+            _log.error("actor_requirements one req failed for %s!!!" % actor.id, exc_info=True)
+            # FIXME how to handle failed requirements, now we drop it
+            return None
+
+        it.set_name(req['op'] + ",SActor" + actor.id)
+        return it
 
     def _app_requirements(self, app):
         _log.debug("_app_requirements(app=%s)" % (app,))
