@@ -410,7 +410,7 @@ class AppManager(object):
                 if req_op and req['type'] == ADD:
                     intersection_iters.append(req_op)
                 elif req_op and req['type'] == REMOVE:
-                    difference_iters.appen(req_op)
+                    difference_iters.append(req_op)
             else:
                 _log.error("actor_requirements unknown req type %s for %s!!!" % (req['type'], actor_id), exc_info=True)
 
@@ -421,7 +421,7 @@ class AppManager(object):
         return return_iter
 
     def _union_requirements(self, req, app, actor):
-        component = actor.component_members().set_name("SActor" + actor.id)
+        component = actor.component_members()
         union_iters = []
         for union_req in req['requirements']:
             try:
@@ -579,7 +579,7 @@ class AppManager(object):
             elif actor_id in self._node.am.actors:
                 self._migrate_own_actor(app, actor_id, actor_name, req, cb, move)
             else:
-                self._migrate_other_actor(self, app, actor_id, actor_name, req, cb, move)
+                self._migrate_other_actor(app, actor_id, actor_name, req, cb, move)
 
     def _migrate_actor_without_req(self, app, actor_id, actor_name, cb):
         """Actor had no requirements, do not migrate"""
