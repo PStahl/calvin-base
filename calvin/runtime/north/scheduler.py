@@ -119,7 +119,10 @@ class Scheduler(object):
                 total.merge(action_result)
                 total.actor_ids.add(actor.id)
             except Exception as e:
-                self._log_exception_during_fire(e)
+                _log.error("Actor {} threw exception: {}. Replicing actor with new replica.".format(actor.id, e))
+                self.actor_mgr.replicate(actor.id, self.node.id)
+                self.actor_mgr.delete_actor(actor.id, delete_from_app=True)
+
         self.idle = not total.did_fire
         return total
 

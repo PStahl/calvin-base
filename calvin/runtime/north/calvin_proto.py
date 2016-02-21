@@ -710,7 +710,7 @@ class CalvinProto(CalvinCBClass):
             # Already have link just continue in _actor_new
                 self._report_usage(to_rt_uuid, node_id, usage, callback, response.CalvinResponse(True))
 
-    def _report_usage(self, to_rt_uuid, node_id, usage, callback, status, uri):
+    def _report_usage(self, to_rt_uuid, node_id, usage, callback, status, uri=None):
         """ Got link? continue actor new """
         if status:
             msg = {'cmd': 'REPORT_USAGE',
