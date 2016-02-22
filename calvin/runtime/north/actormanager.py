@@ -121,6 +121,8 @@ class ActorManager(object):
         if delete_from_app:
             self.node.storage.delete_actor_from_app(a.app_id, actor.id)
 
+        self.node.storage.delete_actor_from_node(self.node.id, actor.id)
+
         app = self.node.app_manager.applications.get(a.app_id)
         if app:
             app.remove_actor(actor.id)

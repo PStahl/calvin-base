@@ -30,6 +30,7 @@ class Replicator(object):
             _log.warning("Could not find actor to replicate")
             cb(status=response.CalvinResponse(False))
             return
+
         _log.debug("Searching for actor to replicate, trying {}".format(actors[index]))
         cb = CalvinCB(self._check_for_original, lost_actor_id=lost_actor_id, lost_actor_info=lost_actor_info,
                       actors=actors, index=index, cb=cb)
@@ -54,6 +55,8 @@ class Replicator(object):
             cb = CalvinCB(self._delete_lost_actor_cb, org_status=status, lost_actor_id=lost_actor_id,
                           lost_actor_info=lost_actor_info, org_cb=org_cb)
             self.node.proto.actor_destroy(lost_actor_info['node_id'], lost_actor_id, callback=cb)
+        elif org_cb:
+            org_cb(status=status)
 
     def _close_actor_ports(self, lost_actor_id, lost_actor_info, cb):
         _log.info("Closing ports of actor {}".format(lost_actor_id))
@@ -62,7 +65,6 @@ class Replicator(object):
             self.node.storage.get_port(inport['id'], cb=callback)
         for outport in lost_actor_info['outports']:
             self.node.storage.get_port(outport['id'], cb=callback)
-        cb(status=response.OK)
 
     def _send_disconnect_request(self, key, value):
         if not value:
@@ -85,17 +87,20 @@ class Replicator(object):
         self.node.storage.delete_actor(lost_actor_id)
         if status.status == response.SERVICE_UNAVAILABLE and not lost_actor_info['node_id'] == self.node.id:
             _log.info("Node is unavailable, delete it {}")
-            self.node.storage.get_node(lost_actor_info['node_id'], self._delete_node)
+            self.node.storage.get_node(lost_actor_info['node_id'], CalvinCB(self._delete_node, cb=org_cb))
+            return
 
         if not status:
             org_cb(status=response.CalvinResponse(False))
         elif org_cb:
             org_cb(status=org_status)
 
-    def _delete_node(self, key, value):
-        _log.debug("Deleting node {} with value {}".format(key, value))
+    def _delete_node(self, key, value, cb):
+        _log.info("Deleting node {} with value {}".format(key, value))
         if not value:
+            cb(response.CalvinResponse(False))
             return
 
         indexed_public = value['attributes'].get('indexed_public')
         self.node.storage.delete_node(key, indexed_public)
+        cb(response.CalvinResponse(True))

@@ -31,6 +31,7 @@ from calvin.runtime.north import metering
 from calvin.runtime.north.calvin_network import CalvinNetwork
 from calvin.runtime.north.calvin_proto import CalvinProto
 from calvin.runtime.north.portmanager import PortManager
+from calvin.runtime.north.replicator import Replicator
 from calvin.runtime.south.monitor import Event_Monitor
 from calvin.runtime.south.plugins.async import async
 from calvin.utilities.attribute_resolver import AttributeResolver
@@ -181,12 +182,78 @@ class Node(object):
         _log.debug("Reporting resource usage for node {}: {}".format(self.id, usage))
         self.resource_manager.register(self.id, usage)
         for peer_id in self.network.links:
-            self.proto.report_usage(peer_id, self.id, usage)
+            callback = CalvinCB(self._report_resource_usage_cb, peer_id)
+            self.proto.report_usage(peer_id, self.id, usage, callback=callback)
+
+    def _report_resource_usage_cb(self, peer_id, status):
+        _log.debug("Report resource usage callback received status {} for {}".format(status, peer_id))
+        if not status:
+            self.lost_node(peer_id)
 
     def register_resource_usage(self, node_id, usage, callback):
         _log.debug("Registering resource usage for node {}: {}".format(node_id, usage))
         self.resource_manager.register(node_id, usage)
         callback(status=response.CalvinResponse(True))
+
+    def lost_node(self, node_id):
+        _log.info("Lost node {}".format(node_id))
+        highest_prio_node = self._highest_prio_node(node_id)
+        if highest_prio_node == self.id:
+            _log.debug("We have highest id, replicate actors")
+            self.replicate_node_actors(node_id, cb=CalvinCB(self._lost_node_cb))
+
+    def _lost_node_cb(self, status):
+        if not status:
+            _log.error("Failed to handle lost node: {}".format(status))
+
+    def _highest_prio_node(self, node_id):
+        node_ids = self.network.links.keys()
+        if node_id in node_ids:
+            node_ids.remove(node_id)
+
+        if self.id not in node_ids:
+            node_ids.append(self.id)
+
+        return sorted(node_ids)[0]
+
+    def replicate_node_actors(self, node_id, cb):
+        _log.info("Fetching actors for lost node: {}".format(node_id))
+        self.storage.get_node_actors(node_id, cb=CalvinCB(self._replicate_node_actors, node_id=node_id, cb=cb))
+
+    def _replicate_node_actors(self, key, value, node_id, cb):
+        _log.info("Replicating lost actors {}".format(value))
+        if value is None:
+            _log.debug("Storage returned None when fetching node actors")
+            cb(status=response.CalvinResponse(False))
+            return
+        elif value == []:
+            _log.debug("No value returned from storage when fetching node actors")
+            cb(status=response.CalvinResponse(True))
+            return
+
+        for actor_id in value:
+            self.storage.get_actor(actor_id, cb=CalvinCB(self._replicate_node_actor, lost_actor_id=actor_id, cb=cb))
+
+    def _replicate_node_actor(self, key, value, lost_actor_id, cb):
+        """ Get app id and actor name from actor info """
+        _log.info("Replicating actor {}: {}".format(key, value))
+        if not value:
+            _log.error("Failed get lost actor info from storage")
+            cb(response.CalvinResponse(False))
+            return
+
+        cb = CalvinCB(func=self._handle_lost_application_actor, lost_actor_id=lost_actor_id,
+                      lost_actor_info=value, cb=cb)
+        self.storage.get_application_actors(value['app_id'], cb=cb)
+
+    def _handle_lost_application_actor(self, key, value, lost_actor_id, lost_actor_info, cb):
+        """ Get required reliability from app info """
+        if not value:
+            _log.error("Failed to get application actors")
+            return
+
+        replicator = Replicator(self, self.control, calvincontrol.uuid_re)
+        replicator.replicate_lost_actor(value, lost_actor_id, lost_actor_info, cb=cb)
 
     #
     # Event loop

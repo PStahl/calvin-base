@@ -107,7 +107,7 @@ class CalvinTunnel(object):
         msg = {'cmd': 'TUNNEL_DATA', 'value': payload, 'tunnel_id': self.id}
         try:
             self.links[self.peer_node_id].send(msg)
-        except:
+        except Exception as e:
             # FIXME we failed sending should resend after establishing the link if our node is not quiting
             # so far only seen during node quit
             _log.analyze(self.rt_id, "+ TUNNEL FAILED", payload, peer_node_id=self.peer_node_id)
@@ -708,7 +708,7 @@ class CalvinProto(CalvinCBClass):
     def report_usage(self, to_rt_uuid, node_id, usage, callback=None):
         if self.node.network.link_request(to_rt_uuid, CalvinCB(self._report_usage, to_rt_uuid, node_id, usage, callback)):
             # Already have link just continue in _actor_new
-                self._report_usage(to_rt_uuid, node_id, usage, callback, response.CalvinResponse(True))
+            self._report_usage(to_rt_uuid, node_id, usage, callback, response.CalvinResponse(True))
 
     def _report_usage(self, to_rt_uuid, node_id, usage, callback, status, uri=None):
         """ Got link? continue actor new """

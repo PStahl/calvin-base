@@ -18,6 +18,7 @@ import sys
 import time
 
 from calvin.actor.actor import ActionResult
+from calvin.actor.actorport import FifoFullException
 from calvin.runtime.south.plugins.async import async
 from calvin.utilities.calvinlogger import get_logger
 
@@ -118,6 +119,9 @@ class Scheduler(object):
                 _log.debug("fired actor %s(%s)" % (actor._type, actor.id))
                 total.merge(action_result)
                 total.actor_ids.add(actor.id)
+            except FifoFullException as e:
+                _log.error(e)
+                pass
             except Exception as e:
                 _log.error("Actor {} threw exception: {}. Replicing actor with new replica.".format(actor.id, e))
                 self.actor_mgr.replicate(actor.id, self.node.id)
