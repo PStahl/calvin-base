@@ -32,6 +32,7 @@ from calvin.utilities import dynops
 _log = calvinlogger.get_logger(__name__)
 _conf = calvinconfig.get()
 
+
 class Storage(object):
 
     """

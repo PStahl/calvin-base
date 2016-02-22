@@ -51,6 +51,10 @@ class StorageNode(Node):
 
         async.DelayedCall(0, self.start)
 
+    @property
+    def _storage_node(self):
+        return True
+
     def _start_resource_reporter(self):
         pass
     #

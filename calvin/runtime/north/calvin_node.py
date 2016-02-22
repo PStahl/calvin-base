@@ -95,6 +95,15 @@ class Node(object):
         if self_start:
             async.DelayedCall(0, self.start)
 
+    @property
+    def _storage_node(self):
+        return False
+
+    def _is_storage_node(self, node_id):
+        if node_id not in self.network.links:
+            return False
+        return self.storage.proxy == self.network.links[node_id].transport.get_uri()
+
     def insert_local_reply(self):
         msg_id = calvinuuid.uuid("LMSG")
         self.async_msg_ids[msg_id] = None
@@ -199,7 +208,7 @@ class Node(object):
         _log.info("Lost node {}".format(node_id))
         highest_prio_node = self._highest_prio_node(node_id)
         if highest_prio_node == self.id:
-            _log.debug("We have highest id, replicate actors")
+            _log.info("We have highest id, replicate actors")
             self.replicate_node_actors(node_id, cb=CalvinCB(self._lost_node_cb))
 
     def _lost_node_cb(self, status):
@@ -211,8 +220,12 @@ class Node(object):
         if node_id in node_ids:
             node_ids.remove(node_id)
 
-        if self.id not in node_ids:
+        if not self._storage_node and self.id not in node_ids:
             node_ids.append(self.id)
+
+        node_ids = [node_id for node_id in node_ids if not self._is_storage_node(node_id)]
+        if not node_ids:
+            return None
 
         return sorted(node_ids)[0]
 
