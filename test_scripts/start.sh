@@ -1,4 +1,4 @@
-[ -f calvin.conf.bak ] && mv calvin.conf.bak calvin.conf
+[ -f calvin.conf.bak ] && mv calvin.conf.bak calvin.conf2
 echo "Starting runtime on port $1 - $2"
 #hostname=`hostname -A | awk '{print $1}'`
 #IP=`getent hosts $hostname | awk '{ print $1 }'`
