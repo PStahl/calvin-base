@@ -123,7 +123,9 @@ class CalvinLink(object):
             print "DIFF: {}".format(msg_size - state_size)
         t2 = time.time()
         if timestamp:
-            timestamp = timestamp - (t2 - t1)
+            print "DUMP TIME: ", t2 - t1
+            timestamp = timestamp + (t2 - t1)
+            msg['start_time'] = msg['start_time'] + (t2 - t1)
 
         self.transport.send(msg, timestamp=timestamp)
 
