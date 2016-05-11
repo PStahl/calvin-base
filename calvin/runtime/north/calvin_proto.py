@@ -274,6 +274,7 @@ class CalvinProto(CalvinCBClass):
                                                                state=state,
                                                                prev_connections=prev_connections,
                                                                actor_args=args,
+                                                               start_time=start_time,
                                                                app_id=app_id), timeout=0.5):
             # Already have link just continue in _actor_replication
                 self._actor_replication(to_rt_uuid, callback, actor_type, state, prev_connections, args, app_id, start_time,
@@ -305,10 +306,6 @@ class CalvinProto(CalvinCBClass):
 
         _log.analyze(self.rt_id, "+", "Handle replication request {}".format(payload))
 
-        #rec_req = time.time() - payload['start_time']
-        #print "TIME, received request: ", rec_req
-        #payload['rec_req_time'] = rec_req
-
         self.node.am.new_replica(payload['state']['actor_type'],
                                  payload['args'],
                                  state=payload['state']['actor_state'],
@@ -318,9 +315,10 @@ class CalvinProto(CalvinCBClass):
 
     def _actor_replication_handler(self, payload, status, *args, **kwargs):
         """ Potentially created actor, reply to requesting node """
-        status.data['create_actor_time'] = time.time() - payload['start_time']
-        status.data['rec_req_time'] = payload['rec_req_time'] - payload['start_time']
-        status.data['decode_time'] = payload['decode_time'] - payload['start_time']
+        status.data['start_time'] = payload['start_time']
+        status.data['create_actor_time'] = time.time()
+        status.data['rec_req_time'] = payload['rec_req_time']
+        status.data['decode_time'] = payload['decode_time']
         value = status.encode()
         msg = {
             'cmd': 'REPLY',

@@ -1199,11 +1199,12 @@ class CalvinControl(object):
         """ Replicate actor response
         """
         actor_id = status.data.get('actor_id') if status.data else None
-        print "TIME send: ", status.data['rec_req_time']
-        print "TIME decode: ", status.data['decode_time']
-        print "TIME create actor: ", status.data['create_actor_time']
+        start_time = status.data['start_time']
+        print "TIME send: ", status.data['rec_req_time'] - start_time
+        print "TIME decode: ", status.data['decode_time'] - start_time
+        print "TIME create actor: ", status.data['create_actor_time'] - start_time
         if status:
-            print "TIME: {}".format(time.time() - start)
+            print "TIME: {}".format(time.time() - start_time)
             print status.data
         else:
             print "FAILED: {}".format(time.time() - start), status

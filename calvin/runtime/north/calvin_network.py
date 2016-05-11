@@ -123,11 +123,9 @@ class CalvinLink(object):
             print "DIFF: {}".format(msg_size - state_size)
         t2 = time.time()
         if timestamp:
-            print "DUMP TIME: ", t2 - t1
-            timestamp = timestamp + (t2 - t1)
             msg['start_time'] = msg['start_time'] + (t2 - t1)
 
-        self.transport.send(msg, timestamp=timestamp)
+        self.transport.send(msg, timestamp=msg.get('start_time'))
 
     def close(self):
         """ Disconnect the transport and hence the link object won't work anymore """
