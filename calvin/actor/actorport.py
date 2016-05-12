@@ -126,7 +126,7 @@ class InPort(Port):
 
         disconnected_endpoints = []
         for ep in endpoints:
-            if not port_id or ep.peer_port_id == port_id:
+            if not port_id or ep.peer_port_id == port_id or ep.port.id == port_id:
                 self.fifo.commit_reads(ep.fifo_key, False)
                 disconnected_endpoints.append(ep)
                 self._detach_endpoint(ep)
@@ -265,7 +265,7 @@ class OutPort(Port):
 
         # When tunneled transport tokens after last continuous acked token will be resent later, receiver will just ack them again if rereceived
         for ep in endpoints:
-            if not port_id or ep.peer_port_id == port_id:
+            if not port_id or ep.peer_port_id == port_id or ep.port.id == port_id:
                 self.fifo.commit_reads(ep.fifo_key, False)
                 disconnected_endpoints.append(ep)
                 self._detach_endpoint(ep)

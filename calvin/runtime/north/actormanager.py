@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import gc
+
 from calvin.utilities import dynops
 from calvin.runtime.south.plugins.async import async
 from calvin.runtime.south import endpoint
@@ -176,7 +178,24 @@ class ActorManager(object):
         if app:
             app.remove_actor(actor.id)
 
-        return a
+        inports = a.inports.iteritems()
+        a.inports = []
+        for port_name, port in inports:
+            if port.id in self.node.pm.disconnecting_ports:
+                del self.node.pm.disconnecting_ports[port.id]
+            if port.id in self.node.pm.ports:
+                del self.node.pm.ports[port.id]
+            del port
+        outports = a.outports.iteritems()
+        a.outports = []
+        for port_name, port in outports:
+            if port.id in self.node.pm.disconnecting_ports:
+                del self.node.pm.disconnecting_ports[port.id]
+            if port.id in self.node.pm.ports:
+                del self.node.pm.ports[port.id]
+            del port
+        del a
+        print "GC: ", gc.collect()
 
     # DEPRECATED: Enabling of an actor is dependent on wether it's connected or not
     def enable(self, actor_id):
