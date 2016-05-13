@@ -1,2 +1,2 @@
-./clean_rep_times.sh
-find rep_times/* -type f -print0 | sort -z -t/ -k2 -n | xargs -0 sed -n '2~5p'
+./clean_rep_times.sh $1
+find $1/* -type f -print0 | sort -z -t/ -k2 -n | xargs -0 sed -n '2~5p'
