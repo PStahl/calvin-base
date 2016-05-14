@@ -26,6 +26,9 @@ class FIFO(object):
         readers is a set of actors reading from the FIFO
     """
 
+    def __del__(self):
+        print "DEL FIFO"
+
     # FIXME: (MAJOR) Readers must be UUIDs instead of sockets or we can't
     # migrate
 
@@ -50,9 +53,11 @@ class FIFO(object):
         fifo = {}
         for reader in self.fifo:
             fifo[reader] = [t.encode() for t in self.fifo[reader]]
+        n = str(self.N)
+        n = n + " " * (10 - len(n))
         state = {
             'fifo': fifo,
-            'N': self.N,
+            'N': n,
             'readers': list(self.readers),
             'write_pos': self.write_pos,
             'read_pos': self.read_pos,
@@ -72,7 +77,7 @@ class FIFO(object):
                     self.fifo[reader] = [Token.decode(token) for token in state['fifo'][reader]]
                 self.write_pos[reader] = state['write_pos'][reader]
 
-        self.N = state['N']
+        self.N = int(state['N'])
         self.readers.update(set(state['readers']))
         self.read_pos.update(state['read_pos'])
         self.tentative_read_pos.update(state['tentative_read_pos'])

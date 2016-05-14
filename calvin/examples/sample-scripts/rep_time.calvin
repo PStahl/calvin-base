@@ -1,5 +1,5 @@
 src : std.CountTimer(sleep=0.5, replicate=1)
-size : std.SizeActor(size=0)
+size : std.SizeActor(size=42) # 42
 snk : io.Print()
 
 src.integer > size.token
