@@ -17,6 +17,7 @@
 import socket
 import json
 import re
+from datetime import datetime
 
 from calvin.actor.actor import Actor, ActionResult, manage, condition, guard
 
@@ -95,6 +96,7 @@ class Heartbeat(Actor):
     @condition(action_output=['out'])
     @guard(lambda self: self.sender and self.nodes and self.out_timer.triggered)
     def send(self):
+        print "SEND     : {}".format(datetime.now())
         self.out_timer.ack()
         node_ids = []
         links = set(self.node.network.list_links())
@@ -111,11 +113,13 @@ class Heartbeat(Actor):
                 _log.debug("Sending heartbeat to node {} at {}".format(node_id, (host, port)))
                 node_ids.append(node_id)
                 data = {'node_id': self.node.id, 'uri': self.node.uri}
+                print "SEND TO  : {} - {}".format(datetime.now(), node_id)
                 try:
                     self.sender.sendto(json.dumps(data), (host, port))
                 except Exception as e:
                     _log.error("Failed to send {} heartbeat to {}: {}".format(data, (host, port), e))
 
+        print "SEND DONE: {}".format(datetime.now())
         return ActionResult(production=(node_ids, ))
 
     @condition(action_input=['in'])
@@ -125,18 +129,21 @@ class Heartbeat(Actor):
     @condition(action_output=['out'])
     @guard(lambda self: self.listener and self.in_timer.triggered)
     def receive(self):
+        print "REC      : {}".format(datetime.now())
         self.in_timer.ack()
         while self.listener.have_data():
             data = self.listener.data_get()
             _log.debug("Received heartbeat from node {}".format(data['data']))
             data = json.loads(data['data'])
             node_id = data['node_id']
+            print "REC FROM : {} - {}".format(datetime.now(), node_id)
             uri = data['uri']
 
             self.node.clear_outgoing_heartbeat(data)
             self.node.resource_manager.register(node_id, {}, uri)
             self.register(node_id)
 
+        print "REC DONE : {}".format(datetime.now())
         return ActionResult(production=("",))
 
     # URI parsing - 0: protocol, 1: host, 2: port
