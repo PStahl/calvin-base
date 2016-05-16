@@ -23,6 +23,7 @@ import trace
 import logging
 import socket
 import time
+from datetime import datetime, timedelta
 
 from calvin.calvinsys import Sys as CalvinSys
 
@@ -403,16 +404,19 @@ class Node(object):
         replicator = Replicator(self, lost_actor_id, lost_actor_info, required_reliability)
         replicator.replicate_lost_actor(cb, time.time())
 
-    def _heartbeat_timeout(self, node_id):
+    def _heartbeat_timeout(self, timestamp, node_id):
+        diff = datetime.now() - (timestamp + timedelta(seconds=HEARTBEAT_TIMEOUT))
+        print "LOST NODE: [{}], [{}] [{}] [{}]".format(node_id, datetime.now(), timestamp + timedelta(seconds=HEARTBEAT_TIMEOUT), diff.total_seconds())
+        _log.error("LOST NODE: [{}], [{}] [{}] [{}]".format(node_id, datetime.now(), timestamp + timedelta(seconds=HEARTBEAT_TIMEOUT), diff.total_seconds()))
         self._clear_heartbeat_timeouts(node_id)
         self.heartbeat_actor.deregister(node_id)
-        self.lost_node(node_id)
+        #self.lost_node(node_id)
 
     def clear_outgoing_heartbeat(self, data):
         if "node_id" in data:
             node_id = data['node_id']
             self._clear_heartbeat_timeouts(node_id)
-            timeout_call = async.DelayedCall(HEARTBEAT_TIMEOUT, CalvinCB(self._heartbeat_timeout, node_id=node_id))
+            timeout_call = async.DelayedCall(HEARTBEAT_TIMEOUT, CalvinCB(self._heartbeat_timeout, timestamp=datetime.now(), node_id=node_id))
             self.outgoing_heartbeats[node_id].append(timeout_call)
             self.resource_manager.register_uri(data['node_id'], data['uri'])
 
@@ -450,7 +454,7 @@ class Node(object):
             if self.control_uri is not None:
                 self.control.start(node=self, uri=self.control_uri)
 
-        if not self.storage_node:
+        if False and not self.storage_node:
             self._start_resource_reporter()
 
     def _start_resource_reporter(self):
@@ -529,6 +533,7 @@ def create_node(uri, control_uri, attributes=None):
     n = Node(uri, control_uri, attributes)
     n.run()
     _log.info('Quitting node "%s"' % n.uri)
+    print "QUIT NODE: [{}] [{}]".format(n.id, datetime.now())
 
 
 def create_tracing_node(uri, control_uri, attributes=None):
