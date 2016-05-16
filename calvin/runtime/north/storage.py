@@ -48,7 +48,7 @@ class Storage(object):
         self.proxy = _conf.get(None, 'storage_proxy')
         _log.analyze(self.node.id, "+", {'proxy': self.proxy})
         self.tunnel = {}
-        self.starting = _conf.get(None, 'storage_start')
+        self.starting = False # _conf.get(None, 'storage_start')
         self.storage = storage_factory.get("proxy" if self.proxy else "dht", node) if self.starting else None
         self.coder = message_coder_factory.get("json")  # TODO: always json? append/remove requires json at the moment
         self.flush_delayedcall = None
@@ -75,6 +75,9 @@ class Storage(object):
         """ Write data in localstore to storage
         """
         _log.debug("Flush local storage data")
+        if not self.started:
+            _log.debug("Storage not started. Do not flush.")
+            return
         if self.flush_timeout < 600:
             self.flush_timeout = self.flush_timeout * 2
         self.flush_delayedcall = None
@@ -165,7 +168,7 @@ class Storage(object):
                 del self.localstore[key]
             self.reset_flush_timeout()
         else:
-            _log.error("Failed to store %s" % key)
+            #_log.error("Failed to store %s" % key)
             if org_key and org_value:
                 if not org_value is None:
                     self.localstore[key] = org_value
