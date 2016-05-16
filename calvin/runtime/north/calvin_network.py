@@ -30,8 +30,8 @@ _conf = calvinconfig.get()
 # FIXME should be read from calvin config
 TRANSPORT_PLUGIN_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), *['south', 'plugins', 'transports'])
 TRANSPORT_PLUGIN_NS = "calvin.runtime.south.plugins.transports"
-DEFAULT_TIMEOUT = 5.0
-DEFAULT_LINK_REQUEST_TIMEOUT = 1.0
+DEFAULT_TIMEOUT = 0.1
+DEFAULT_LINK_REQUEST_TIMEOUT = 0.1
 
 
 class CalvinLink(object):
