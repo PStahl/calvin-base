@@ -64,7 +64,8 @@ while true; do
     #pstree -p
 
     #printf "\n\n"
-    #date +"%Y-%m-%d %H:%M:%S.%N"
+    d=`date +"%Y-%m-%d %H:%M:%S.%N"`
+    echo "KILLING: $d"
     #printf "\n\n"
     #pkill -9 -P $PID
     pkill -P $PID

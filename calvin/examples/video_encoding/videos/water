@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html lang="en" xmlns:fb="http://developers.facebook.com/schema/" xmlns:og="http://opengraphprotocol.org/schema/" class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html lang="en" xmlns:fb="http://developers.facebook.com/schema/" xmlns:og="http://opengraphprotocol.org/schema/" class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html lang="en" xmlns:fb="http://developers.facebook.com/schema/" xmlns:og="http://opengraphprotocol.org/schema/" class="no-js lt-ie9"> <![endif]-->
+<!--[if IE 9]>         <html lang="en" xmlns:fb="http://developers.facebook.com/schema/" xmlns:og="http://opengraphprotocol.org/schema/" class="no-js ie9"> <![endif]-->
+<!--[if gt IE 9]><!--> <html lang="en" xmlns:fb="http://developers.facebook.com/schema/" xmlns:og="http://opengraphprotocol.org/schema/" class="no-js"> <!--<![endif]-->
+  <head>
+    <link rel="dns-prefetch" href="//static.videezy.com">
+      <!-- BEGIN TRACKJS -->
+      <script type="text/javascript">window._trackJs = { token: 'b58bfa383c8f4f27918659eca425d6fc' };</script>
+      <script type="text/javascript" src="https://d2zah9y47r7bi2.cloudfront.net/releases/current/tracker.js" crossorigin="anonymous"></script>
+      <!-- END TRACKJS -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<script type="text/javascript">window.NREUM||(NREUM={});NREUM.info={"beacon":"bam.nr-data.net","errorBeacon":"bam.nr-data.net","licenseKey":"8807cf62c6","applicationID":"8328975","transactionName":"cl0NR0UNXlpTQ0wXUUJdFkFUB0EZRVkMEg==","queueTime":0,"applicationTime":115,"agent":""}</script>
+<script type="text/javascript">window.NREUM||(NREUM={}),__nr_require=function(e,t,n){function r(n){if(!t[n]){var o=t[n]={exports:{}};e[n][0].call(o.exports,function(t){var o=e[n][1][t];return r(o||t)},o,o.exports)}return t[n].exports}if("function"==typeof __nr_require)return __nr_require;for(var o=0;o<n.length;o++)r(n[o]);return r}({1:[function(e,t,n){function r(e,t){return function(){o(e,[(new Date).getTime()].concat(a(arguments)),null,t)}}var o=e("handle"),i=e(2),a=e(3);"undefined"==typeof window.newrelic&&(newrelic=NREUM);var u=["setPageViewName","addPageAction","setCustomAttribute","finished","addToTrace","inlineHit"],c=["addPageAction"],f="api-";i(u,function(e,t){newrelic[t]=r(f+t,"api")}),i(c,function(e,t){newrelic[t]=r(f+t)}),t.exports=newrelic,newrelic.noticeError=function(e){"string"==typeof e&&(e=new Error(e)),o("err",[e,(new Date).getTime()])}},{}],2:[function(e,t,n){function r(e,t){var n=[],r="",i=0;for(r in e)o.call(e,r)&&(n[i]=t(r,e[r]),i+=1);return n}var o=Object.prototype.hasOwnProperty;t.exports=r},{}],3:[function(e,t,n){function r(e,t,n){t||(t=0),"undefined"==typeof n&&(n=e?e.length:0);for(var r=-1,o=n-t||0,i=Array(0>o?0:o);++r<o;)i[r]=e[t+r];return i}t.exports=r},{}],ee:[function(e,t,n){function r(){}function o(e){function t(e){return e&&e instanceof r?e:e?u(e,a,i):i()}function n(n,r,o){e&&e(n,r,o);for(var i=t(o),a=l(n),u=a.length,c=0;u>c;c++)a[c].apply(i,r);var s=f[g[n]];return s&&s.push([m,n,r,i]),i}function p(e,t){w[e]=l(e).concat(t)}function l(e){return w[e]||[]}function d(e){return s[e]=s[e]||o(n)}function v(e,t){c(e,function(e,n){t=t||"feature",g[n]=t,t in f||(f[t]=[])})}var w={},g={},m={on:p,emit:n,get:d,listeners:l,context:t,buffer:v};return m}function i(){return new r}var a="nr@context",u=e("gos"),c=e(2),f={},s={},p=t.exports=o();p.backlog=f},{}],gos:[function(e,t,n){function r(e,t,n){if(o.call(e,t))return e[t];var r=n();if(Object.defineProperty&&Object.keys)try{return Object.defineProperty(e,t,{value:r,writable:!0,enumerable:!1}),r}catch(i){}return e[t]=r,r}var o=Object.prototype.hasOwnProperty;t.exports=r},{}],handle:[function(e,t,n){function r(e,t,n,r){o.buffer([e],r),o.emit(e,t,n)}var o=e("ee").get("handle");t.exports=r,r.ee=o},{}],id:[function(e,t,n){function r(e){var t=typeof e;return!e||"object"!==t&&"function"!==t?-1:e===window?0:a(e,i,function(){return o++})}var o=1,i="nr@id",a=e("gos");t.exports=r},{}],loader:[function(e,t,n){function r(){if(!w++){var e=v.info=NREUM.info,t=s.getElementsByTagName("script")[0];if(e&&e.licenseKey&&e.applicationID&&t){c(l,function(t,n){e[t]||(e[t]=n)});var n="https"===p.split(":")[0]||e.sslForHttp;v.proto=n?"https://":"http://",u("mark",["onload",a()],null,"api");var r=s.createElement("script");r.src=v.proto+e.agent,t.parentNode.insertBefore(r,t)}}}function o(){"complete"===s.readyState&&i()}function i(){u("mark",["domContent",a()],null,"api")}function a(){return(new Date).getTime()}var u=e("handle"),c=e(2),f=window,s=f.document;NREUM.o={ST:setTimeout,CT:clearTimeout,XHR:f.XMLHttpRequest,REQ:f.Request,EV:f.Event,PR:f.Promise,MO:f.MutationObserver},e(1);var p=""+location,l={beacon:"bam.nr-data.net",errorBeacon:"bam.nr-data.net",agent:"js-agent.newrelic.com/nr-918.min.js"},d=window.XMLHttpRequest&&XMLHttpRequest.prototype&&XMLHttpRequest.prototype.addEventListener&&!/CriOS/.test(navigator.userAgent),v=t.exports={offset:a(),origin:p,features:{},xhrWrappable:d};s.addEventListener?(s.addEventListener("DOMContentLoaded",i,!1),f.addEventListener("load",r,!1)):(s.attachEvent("onreadystatechange",o),f.attachEvent("onload",r)),u("mark",["firstbyte",a()],null,"api");var w=0},{}]},{},["loader"]);</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0" />
+    <title>Slow Motion Drop of Water HD Stock Video | Free HD Stock Video Footage at Videezy!</title>
+<meta content="This hd stock video of slow motion drop shows water dropping. Hope you can use this slow motion water drop video in your next project." name="description" />
+<meta content="Videezy" property="og:site_name" />
+<meta content="Slow Motion Drop of Water HD Stock Video | Free HD Stock Video Footage at Videezy!" property="og:title" />
+<meta content="This hd stock video of slow motion drop shows water dropping. Hope you can use this slow motion water drop video in your next project.
+
+" property="og:description" />
+<meta content="https://www.videezy.com/ink-drops-and-splatters/2448-slow-motion-drop-of-water-hd-stock-video" property="og:url" />
+<meta content="en_US" property="og:locale" />
+<meta content="es_ES" property="og:locale:alternate" />
+<meta content="pt_BR" property="og:locale:alternate" />
+<meta content="//static.videezy.com/system/resources/previews/000/002/448/original/slow-motion-drop-hd-stock-video.mp4" property="og:video" />
+    <link href="/favicon.ico" rel="shortcut icon"></link>
+    <link href="https://static.videezy.com/assets/application-971d95b29e0500606088b59890fc598f.css" media="screen" rel="stylesheet" type="text/css" />
+    <link href="https://feeds.feedburner.com/eezyinc/videezy-images" rel="alternate" title="RSS" type="application/rss+xml" />
+
+        <link rel="canonical" href="https://www.videezy.com/ink-drops-and-splatters/2448-slow-motion-drop-of-water-hd-stock-video">
+
+
+    <meta content="authenticity_token" name="csrf-param" />
+<meta content="kLnlboUkvVP/oWxcEuEoCSLzExcuUtc1FwzJExsI9IQ=" name="csrf-token" />
+    <!-- Begin TextBlock "HTML - Head" -->
+<meta name="google-site-verification" content="mOMyvrYVQGuqwse7CZihEeIr5hGdSrWfID9O45QHsTQ" />
+<!--<script type="text/javascript" src="//api.xeezy.com/api.min.js"></script>-->
+
+<script type='text/javascript'>
+var googletag = googletag || {};
+googletag.cmd = googletag.cmd || [];
+(function() {
+var gads = document.createElement('script');
+gads.async = true;
+gads.type = 'text/javascript';
+var useSSL = 'https:' == document.location.protocol;
+gads.src = (useSSL ? 'https:' : 'http:') + 
+'//www.googletagservices.com/tag/js/gpt.js';
+var node = document.getElementsByTagName('script')[0];
+node.parentNode.insertBefore(gads, node);
+})();
+</script>
+
+<script type='text/javascript'>
+googletag.cmd.push(function() {
+googletag.defineSlot('/1021447/Videezy-Top-Leaderboard', [955, 125], 'div-gpt-ad-1359437045469-0').addService(googletag.pubads());
+googletag.pubads().enableSingleRequest();
+googletag.enableServices();
+});
+</script>
+<meta name="msvalidate.01" content="9E7A3F56C01FB9B69FCDD1FBD287CAE4" />
+</script>
+
+<meta name="p:domain_verify" content="9949c020348e97fc55305d8f9567e26b"/>
+<!-- TradeDoubler site verification 2802549 -->
+<meta name="google-site-verification" content="Kyua5JM6jqFQ6WxVq5b-tT2OxzLMy9QYKI9G2MAGbBo" />
+<!-- End TextBlock "HTML - Head" -->
+        <div hidden itemprop="video" itemscope itemtype="http://schema.org/VideoObject">
+        <meta itemprop="author" content="Mazwai">
+
+      <meta itemprop="uploadDate" content="2014-10-24">
+
+        <meta itemprop="datePublished" content="2014-12-10">
+
+      <meta itemprop="thumbnailUrl" content="//static.videezy.com/system/resources/thumbnails/000/002/448/original/slow-motion-drop-of-water-hd-stock-video.jpg">
+      <meta itemprop="contentUrl" content="//static.videezy.com/system/resources/previews/000/002/448/original/slow-motion-drop-hd-stock-video.mp4">
+      <meta itemprop="name" content="Slow Motion Drop of Water HD Stock Video" />
+      <meta itemprop="description" content="This hd stock video of slow motion drop shows water dropping. Hope you can use this slow motion water drop video in your next project.
+
+">
+    </div>
+  <link href="https://static.videezy.com/assets/video-9a408e30165095cd5510e96825e5bd8d.css" media="screen" rel="stylesheet" type="text/css" />
+
+        <link rel="alternate" hreflang="en" href="https://www.videezy.com/ink-drops-and-splatters/2448-slow-motion-drop-of-water-hd-stock-video" />
+    <link rel="alternate" hreflang="es" href="https://es.videezy.com/las-gotas-de-tinta-y-salpicaduras/2448-c-mara-lenta-gota-hd-de-v-deo" />
+
+  </head>
+  <body class=" fullwidth redesign-layout resources-show">
+
+    <div id="fb-root"></div>
+
+    <header class="site-header">
+  <div class="max-inner">
+
+
+    <nav>
+
+      <ul>
+          <li class="is-logged-out">
+              <a href="/signup" class="signup">Join Eezy!</a>
+          </li>
+          <li class="is-logged-out">
+            <a href="/login" class="login-link" data-target="login-popup" rel="lightbox">Login</a>
+          </li>
+
+
+      </ul>
+
+
+
+
+
+      <div class="dropdown-menu is-logged-out on-mobile">
+        <a href="#">
+          <i class="fa fa-bars"></i>
+</a>        <ul>
+          <li>
+\              <a href="/signup" class="signup">Join&nbsp;Eezy</a>
+          </li>
+          <li>
+            <a href="/login" class="login-link" data-target="login-popup" rel="lightbox">Login</a>
+          </li>
+        </ul>
+      </div>
+
+    </nav>
+
+
+    <figure class="site-logo">
+      <a href="https://www.videezy.com/" alt="Videezy"><img alt="Free HD Stock Video at Videezy" src="https://static.videezy.com/assets/videezy/videezy-logo-96c769aa52a91cac6fa59c746e388dbb.svg" title="Videezy" /></a>
+    </figure>
+
+      <form accept-charset="UTF-8" action="/free-video" class="search-form" id="search-form" method="post"><div style="margin:0;padding:0;display:inline"><input name="utf8" type="hidden" value="&#x2713;" /><input name="authenticity_token" type="hidden" value="kLnlboUkvVP/oWxcEuEoCSLzExcuUtc1FwzJExsI9IQ=" /></div>
+  <input id="from" name="from" type="hidden" value="mainsite" />
+    <input id="internal_search" name="internal_search" type="hidden" value="true" />
+    <input class="search-term" id="search-term" name="search" placeholder="Enter Keyword(s)" type="text" value="" />
+    <input class="search-submit" name="commit" type="submit" value="Search" />
+</form>
+
+  </div>
+</header>
+
+
+
+
+</div>
+
+
+    <div id="body">
+      <div class="content">
+
+        <div class="flash-error"><p>Download link expired.</p></div>
+
+
+        
+
+          
+
+
+<section class="info-section resource-main-info">
+  
+  <!-- start: resource-card -->
+  <div class="resource-card">
+
+    <div class="resource-media">
+      <div class="item">
+        <div class="resource-video">
+          
+<!-- <video width="630" height="354" controls="controls" id="preview-video" data-tracking-url="/tracking/view/2448-slow-motion-drop-of-water-hd-stock-video" data-tracking-timeout="5000"> -->
+
+
+<video style="width:100%;height:100%;" width="100%" height="100%" controls="controls" id="preview-video" data-tracking-url="/tracking/view/2448-slow-motion-drop-of-water-hd-stock-video" data-tracking-timeout="5000">
+
+
+    <source type="video/mp4" src="//static.videezy.com/system/resources/previews/000/002/448/original/slow-motion-drop-hd-stock-video.mp4" />
+    <source type="application/ogg" src="//static.videezy.com/system/resources/preview2s/000/002/448/original/slow-motion-drop-hd-stock-video.ogv" />
+    <source type="application/octet-stream" src="//static.videezy.com/system/resources/preview3s/000/002/448/original/slow-motion-drop-hd-stock-video.webm" />
+
+  <object width="630" height="354" type="application/x-shockwave-flash" data="https://static.videezy.com/assets/mediaelement_rails/flashmediaelement-481aa76708762123a5946e5b5d4e76d1.swf">
+    <param name="movie" value="https://static.videezy.com/assets/mediaelement_rails/flashmediaelement-481aa76708762123a5946e5b5d4e76d1.swf" />
+    <param name="flashvars" value="controls=true&file=//static.videezy.com/system/resources/previews/000/002/448/original/slow-motion-drop-hd-stock-video.mp4" />
+    <img src="//static.videezy.com/system/resources/thumbnails/000/002/448/original/slow-motion-drop-of-water-hd-stock-video.jpg" width="354" height="630" title="No video playback capabilities" />
+  </object>
+</video>
+
+        </div>      
+      </div>
+    </div>
+
+
+    <!-- start: resource-info -->
+    <div class="resource-info">
+      <h1 class="resource-name">Slow Motion Drop of Water HD Stock Video</h1>
+
+      <div class="resource-info-scrollable">
+
+
+
+          <div class="resource-desc">
+              <p>This hd stock video of slow motion drop shows water dropping. Hope you can use this slow motion water drop video in your next project.</p>
+
+<p></p>
+          </div>
+
+      </div>
+
+
+      <!-- start: resource cta -->
+      <div class="resource-cta">        
+        
+            <a href="/download/2448-slow-motion-drop-of-water-hd-stock-video/67a902b1" class="btn download-resource-link" id="download-button-non-en">Download</a>
+          
+
+        
+        <div class="social-cta">
+
+          
+  <a href="#" class="resource-likes-count fave unauthorized" data-target="login-popup" rel="lightbox">
+    <i class="ezi ezi-heart"></i> 36
+</a>
+
+          <a href="#" class="resource-comments-count">
+            <i class="sharebar-icon comment-icon"></i>
+            5
+</a>
+          <div class="resource-share-btns">
+            <div class="shareblock-horiz">
+  <ul>
+    <li>
+      <a href="https://www.facebook.com/sharer.php?u=https://www.videezy.com/ink-drops-and-splatters/2448-slow-motion-drop-of-water-hd-stock-video&amp;t=Slow Motion Drop of Water HD Stock Video" class="facebook-like" data-href="https://www.videezy.com/ink-drops-and-splatters/2448-slow-motion-drop-of-water-hd-stock-video" data-send="false" data-layout="button" data-width="60" data-show-faces="false" rel="nofollow" target="_blank">
+        <span class="vhidden">  <i class="sharebar-icon facebook-icon"></i></span>
+      </a>
+    </li>
+    <li>
+      <a href="https://twitter.com/share?text=Slow Motion Drop of Water HD Stock Video on @videezy" class="twitter-share" data-text="Slow Motion Drop of Water HD Stock Video on @videezy" data-url="https://www.videezy.com/ink-drops-and-splatters/2448-slow-motion-drop-of-water-hd-stock-video" data-count="none" rel="nofollow" target="_blank">
+        <span class="vhidden">  <i class="sharebar-icon twitter-icon"></i></span>
+      </a>
+    </li>
+    <li>
+      <a href="https://plus.google.com/share?url=https://www.videezy.com/ink-drops-and-splatters/2448-slow-motion-drop-of-water-hd-stock-video" class="googleplus-one" data-size="medium" data-href="https://www.videezy.com/ink-drops-and-splatters/2448-slow-motion-drop-of-water-hd-stock-video" data-annotation="none" rel="nofollow" target="_blank">
+        <span class="vhidden">  <i class="sharebar-icon gplus-icon"></i></span>
+      </a>
+    </li>
+    <li>
+      <a href="//www.pinterest.com/pin/create/button/?url=https://www.videezy.com/ink-drops-and-splatters/2448-slow-motion-drop-of-water-hd-stock-video&media=//static.videezy.com/system/resources/previews/000/002/448/original/slow-motion-drop-hd-stock-video.mp4&description=Slow Motion Drop of Water HD Stock Video" class="pinterest-pinit" data-pin-do="buttonPin" data-pin-color="red" data-pin-height="20" target="_blank">
+        <span class="vhidden"> <i class="sharebar-icon pinterest-icon"></i></span>
+      </a>
+    </li>
+  </ul>  
+</div>
+            <a href="#" class="resource-share-count">
+              <i class="sharebar-icon share-icon"></i>
+</a>          </div>
+        </div>       
+
+
+      </div>
+      <!-- end: resource cta -->
+          
+
+        <div class="secondary-section-info">  
+    <div class='bsap non-popup-adunit adunit' data-adunit='Videezy_Show_300x250_TopRight' data-dimensions='300x250'></div>
+  </div>
+ 
+
+      <div class="meta-cta-wrapper">
+
+      
+      <!-- start: resource-meta -->
+      <div class="resource-meta">
+
+        <div>
+          <span>Copyright:</span>
+          <span>
+              <a href="#licenses-popup" data-target="license-popup" id="licenses-popup" rel="lightbox">Mazwai</a>
+          </span>
+        </div>
+
+
+        <div>
+          <span>Metadata:</span>
+          <span><a href="#" data-target="meta-info-popup" rel="lightbox">Show info</a></span>
+        </div>        
+
+
+      </div> 
+      <!-- end: resource-meta -->
+
+
+
+      </div> <!-- end: meta-cta-wrapper -->
+
+      
+      <p class="resource-tags">
+  <strong>This File Also Appears In Searches For</strong><br />
+    <span class="resource-tag"><a href="/free-video/water-drop" class="tag-link">water drop</a></span>
+    <span class="resource-tag"><a href="/free-video/water" class="tag-link">water</a></span>
+    <span class="resource-tag"><a href="/free-video/motion" class="tag-link">motion</a></span>
+    <span class="resource-tag"><a href="/free-video/slow" class="tag-link">slow</a></span>
+    <span class="resource-tag"><a href="/free-video/flow" class="tag-link">flow</a></span>
+    <span class="resource-tag"><a href="/free-video/slow-motion" class="tag-link">slow motion</a></span>
+    <span class="resource-tag"><a href="/free-video/splash" class="tag-link">splash</a></span>
+    <span class="resource-tag"><a href="/free-video/water-drip" class="tag-link">water drip</a></span>
+    <span class="resource-tag"><a href="/free-video/splashing" class="tag-link">splashing</a></span>
+    <span class="resource-tag"><a href="/free-video/glass-of-water" class="tag-link">glass of water</a></span>
+</p>
+      
+
+
+    </div>
+    <!-- end: resource-info -->
+
+  </div>
+  <!-- end: resource-card -->
+
+</section>
+
+
+<section class="info-section resource-related">
+  <h2>Users Who Downloaded This File Also Downloaded</h2>
+  
+  <input type="hidden" name="eezysearch" value="water"/>
+<input type="hidden" name="eezy-resource-id" value="2448"/>
+
+
+<div class="special-items">
+  <div id="similar" class="shutterstock">
+    <div class="eezyapi" data-affiliate="shutterstock" data-limit="40" data-apiparams="s=videezy"></div>
+  </div>
+</div>
+
+
+
+  <ul class="grid items is--justified videezy-grid">
+      <li data-height="129" data-width="173">
+    <a href="/nature/2382-raindrops-on-leaves-free-stock-footage" class="free"><img alt="Raindrops on Leaves Free Stock Footage" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/382/small/raindrops-on-leaves-free-stock-footage.jpg" title="Raindrops on Leaves Free Stock Footage" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/258-water-dripping-stock-video-in-hd" class="free"><img alt="Water Dripping Stock Video in HD " height="140" src="//static.videezy.com/system/resources/thumbnails/000/000/258/small/water-dripping-stock-video-in-hd.jpg" title="Water Dripping Stock Video in HD " width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/2381-slow-motion-rain-free-stock-footage" class="free"><img alt="Slow Motion Rain Free Stock Footage" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/381/small/slow-motion-rain-free-stock-footage.jpg" title="Slow Motion Rain Free Stock Footage" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/2282-pouring-a-glass-of-water-free-stock-video" class="free"><img alt="Pouring a Glass of Water Free Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/282/small/pouring-a-glass-of-water-free-stock-video.jpg" title="Pouring a Glass of Water Free Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/2441-pouring-rain-in-slow-motion-free-footage" class="free"><img alt="Pouring Rain in Slow Motion Free Footage" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/441/small/pouring-rain-in-slow-motion-free-footage.jpg" title="Pouring Rain in Slow Motion Free Footage" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/150-water-drop-stock-video-in-hd" class="free"><img alt="Water Drop Stock Video in HD " height="140" src="//static.videezy.com/system/resources/thumbnails/000/000/150/small/waterdrop.jpg" title="Water Drop Stock Video in HD " width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/nature/85-hd-footage-dew-drop-on-blade-of-grass-stock-video" class="free"><img alt="HD Footage: Dew Drop on Blade of Grass Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/000/085/small/dew-drop-rodeo.jpg" title="HD Footage: Dew Drop on Blade of Grass Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/2777-river-flow-stock-video" class="free"><img alt="River Flow Stock Video " height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/777/small/river-flow-stock-video.jpg" title="River Flow Stock Video " width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/3869-water-drop-stock-video" class="free"><img alt="Water Drop Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/003/869/small/water-drop.jpg" title="Water Drop Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/nature/2403-rain-on-a-window-hd-stock-video" class="free"><img alt="Rain on a Window HD Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/403/small/rain-on-a-window-hd-stock-video.png" title="Rain on a Window HD Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/2396-raindrops-on-a-window-royalty-free-hd-stock-video" class="free"><img alt="Raindrops on a Window Royalty Free HD Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/396/small/raindrops-on-a-window-royalty-free-hd-stock-video.jpg" title="Raindrops on a Window Royalty Free HD Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/nature/2657-slow-motion-wave-royalty-free-hd-stock-footage" class="free"><img alt="Slow Motion Wave Royalty Free HD Stock Footage" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/657/small/slow-motion-wave-royalty-free-hd-stock-footage.jpg" title="Slow Motion Wave Royalty Free HD Stock Footage" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/2427-waves-on-the-beach-free-hd-video" class="free"><img alt="Waves on the Beach Free HD Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/427/small/waves-on-the-beach-free-hd-video.jpg" title="Waves on the Beach Free HD Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/transportation/2272-slow-motion-aerobatics-stock-video" class="free"><img alt="Slow Motion Aerobatics Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/272/small/slow-motion-aerobatics-stock-video.jpg" title="Slow Motion Aerobatics Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/2412-rain-on-a-street-lamp-video" class="free"><img alt="Rain on a Street Lamp Video " height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/412/small/rain-on-a-street-lamp-video.png" title="Rain on a Street Lamp Video " width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/random-objects/2668-slow-motion-kite-royalty-free-hd-stock-video" class="free"><img alt="Slow Motion Kite Royalty Free HD Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/668/small/slow-motion-kite-royalty-free-hd-stock-video.jpg" title="Slow Motion Kite Royalty Free HD Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/nature/78-dew-drops-on-a-blade-of-grass" class="free"><img alt="Dew Drops on a Blade of Grass" height="140" src="//static.videezy.com/system/resources/thumbnails/000/000/078/small/dewdrops.jpg" title="Dew Drops on a Blade of Grass" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/sports/2746-slow-motion-slam-dunk-hd-stock-footage" class="free"><img alt="Slow Motion Slam Dunk HD Stock Footage" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/746/small/slow-motion-slam-dunk-hd-stock-footage.jpg" title="Slow Motion Slam Dunk HD Stock Footage" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/nature/2182-slow-motion-hd-sea-waves-stock-video" class="free"><img alt="Slow Motion HD Sea Waves Stock Video " height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/182/small/slow-motion-hd-sea-waves-stock-video.jpg" title="Slow Motion HD Sea Waves Stock Video " width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/transportation/2287-diving-stunt-plane-slow-motion-video" class="free"><img alt="Diving Stunt Plane Slow Motion Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/287/small/diving-stunt-plane-slow-motion-video.jpg" title="Diving Stunt Plane Slow Motion Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/nature/86-edge-of-water-stock-video-hd" class="free"><img alt="Edge of Water Stock Video HD" height="140" src="//static.videezy.com/system/resources/thumbnails/000/000/086/small/edge-of-water.jpg" title="Edge of Water Stock Video HD" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/people/4166-kids-playing-in-water-fountain-slow-motion" class="free"><img alt="Kids Playing in Water Fountain Slow-motion " height="140" src="//static.videezy.com/system/resources/thumbnails/000/004/166/small/kids-playing-in-water-fountain-slow-motion.jpg" title="Kids Playing in Water Fountain Slow-motion " width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/food-and-drink/2641-pouring-red-wine-video-free-hd-stock-video-footage-at-videezy" class="free"><img alt="Pouring Red Wine Video | Free HD Stock Video Footage at Videezy!" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/641/small/pouring-red-wine-video-free-hd-stock-video-footage-at-videezy.jpg" title="Pouring Red Wine Video | Free HD Stock Video Footage at Videezy!" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/2355-raindrops-on-glass-free-stock-footage" class="free"><img alt="Raindrops on Glass Free Stock Footage" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/355/small/raindrops-on-glass-free-stock-footage.jpg" title="Raindrops on Glass Free Stock Footage" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/nature/91-hd-leaf-and-stream-stock-video" class="free"><img alt="HD Leaf and Stream Stock Video " height="140" src="//static.videezy.com/system/resources/thumbnails/000/000/091/small/leaf.jpg" title="HD Leaf and Stream Stock Video " width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/2354-water-drops-on-glass-free-footage" class="free"><img alt="Water Drops on Glass Free Footage" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/354/small/water-drops-on-glass-free-footage.jpg" title="Water Drops on Glass Free Footage" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/transportation/2286-barrel-roll-stunt-royalty-free-footage" class="free"><img alt="Barrel Roll Stunt Royalty Free Footage" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/286/small/barrel-roll-stunt-royalty-free-footage.jpg" title="Barrel Roll Stunt Royalty Free Footage" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/208-close-up-of-lake-stock-video-in-hd" class="free"><img alt="Close Up Of Lake Stock Video in HD " height="140" src="//static.videezy.com/system/resources/thumbnails/000/000/208/small/close-up-of-lake.jpg" title="Close Up Of Lake Stock Video in HD " width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/2422-summer-rainstorm-royalty-free-hd-stock-video" class="free"><img alt="Summer Rainstorm Royalty Free HD Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/422/small/summer-rainstorm-royalty-free-hd-stock-video.jpg" title="Summer Rainstorm Royalty Free HD Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/nature/2185-heavy-rain-hd-stock-video" class="free"><img alt="Heavy Rain HD Stock Video " height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/185/small/heavy-rain-hd-stock-video.jpg" title="Heavy Rain HD Stock Video " width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/arts-and-culture/269-statue-of-liberty-stock-video-in-hd" class="free"><img alt="Statue of Liberty Stock Video in HD " height="140" src="//static.videezy.com/system/resources/thumbnails/000/000/269/small/statue-of-liberty-stock-video-in-hd.jpg" title="Statue of Liberty Stock Video in HD " width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/elements-and-effects/2304-black-ink-in-water-hd-stock-video" class="free"><img alt="Black Ink in Water HD Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/304/small/black-ink-in-water-hd-stock-video.jpg" title="Black Ink in Water HD Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/transportation/2275-falling-aerobatic-hd-stock-video" class="free"><img alt="Falling Aerobatic HD Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/275/small/falling-aerobatic-hd-stock-video.jpg" title="Falling Aerobatic HD Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/259-free-running-water-stock-video-in-hd" class="free"><img alt="Free Running Water Stock Video in HD " height="140" src="//static.videezy.com/system/resources/thumbnails/000/000/259/small/free-running-water-stock-video-in-hd.jpg" title="Free Running Water Stock Video in HD " width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/nature/2307-clips-of-the-aurora-hd-stock-video" class="free"><img alt="Clips Of The Aurora HD Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/307/small/clips-of-the-aurora-hd-stock-video.jpg" title="Clips Of The Aurora HD Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/urban/2478-helsinki-in-motion-hd-stock-video" class="free"><img alt="Helsinki In Motion HD Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/478/small/helsinki-in-motion-hd-stock-video.png" title="Helsinki In Motion HD Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/nature/2431-raindrops-on-yucca-stock-video" class="free"><img alt="Raindrops on Yucca Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/431/small/raindrops-on-yucca-stock-video.png" title="Raindrops on Yucca Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/travel/4380-boat-by-the-river-stock-video" class="free"><img alt="Boat by the River Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/004/380/small/boat-by-the-river.jpg" title="Boat by the River Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/arts-and-culture/194-large-water-fountain-stock-video-in-hd" class="free"><img alt="Large Water Fountain Stock Video in HD " height="140" src="//static.videezy.com/system/resources/thumbnails/000/000/194/small/large-fountain.jpg" title="Large Water Fountain Stock Video in HD " width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/2383-raining-on-window-free-stock-footage" class="free"><img alt="Raining on Window Free Stock Footage" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/383/small/raining-on-window-free-stock-footage.jpg" title="Raining on Window Free Stock Footage" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/food-and-drink/2451-rooftop-summer-dinner-hd-stock-video" class="free"><img alt="Rooftop Summer Dinner HD Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/451/small/rooftop-summer-dinner-hd-stock-video.jpg" title="Rooftop Summer Dinner HD Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/nature/4175-waterfall-in-slow-motion" class="free"><img alt="Waterfall in Slow-motion " height="140" src="//static.videezy.com/system/resources/thumbnails/000/004/175/small/waterfall-in-slow-motion.jpg" title="Waterfall in Slow-motion " width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/animals-and-wildlife/2415-macro-view-of-a-spider-web-royalty-free-video" class="free"><img alt="Macro View of a Spider Web Royalty Free Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/415/small/macro-view-of-a-spider-web-royalty-free-video.jpg" title="Macro View of a Spider Web Royalty Free Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/195-water-fountain-stock-video-filmed-in-hd-free" class="free"><img alt="Water Fountain Stock Video filmed in HD Free" height="140" src="//static.videezy.com/system/resources/thumbnails/000/000/195/small/water-flowing-from-fountain.jpg" title="Water Fountain Stock Video filmed in HD Free" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/98-hd-logs-in-the-water-stock-video" class="free"><img alt="HD Logs In The Water Stock Video " height="140" src="//static.videezy.com/system/resources/thumbnails/000/000/098/small/logs-in-the-water.jpg" title="HD Logs In The Water Stock Video " width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/104-free-hd-close-water-fall-time-lapse-stock-video" class="free"><img alt="Free HD Close Water Fall Time Lapse Stock Video " height="140" src="//static.videezy.com/system/resources/thumbnails/000/000/104/small/close-falls-timelapse.jpg" title="Free HD Close Water Fall Time Lapse Stock Video " width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/149-free-water-and-plants-stock-video-in-hd" class="free"><img alt="Free Water and Plants Stock Video in HD" height="140" src="//static.videezy.com/system/resources/thumbnails/000/000/149/small/plants-watershot-2.jpg" title="Free Water and Plants Stock Video in HD" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/animals-and-wildlife/2311-dragon-fly-in-ultra-slow-motion-stock-video" class="free"><img alt="Dragon Fly In Ultra Slow Motion Stock Video " height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/311/small/dragon-fly-in-ultra-slow-motion-stock-video.jpg" title="Dragon Fly In Ultra Slow Motion Stock Video " width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/nature/3277-flying-over-the-ocean-free-stock-footage" class="free"><img alt="Flying over the Ocean Free Stock Footage" height="140" src="//static.videezy.com/system/resources/thumbnails/000/003/277/small/flying-over-the-ocean-free-stock-footage.jpg" title="Flying over the Ocean Free Stock Footage" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/time-lapse/97-high-falls-time-lapse-stock-video-in-hd" class="free"><img alt="High Falls Time Lapse Stock Video in HD" height="140" src="//static.videezy.com/system/resources/thumbnails/000/000/097/small/high-falls.jpg" title="High Falls Time Lapse Stock Video in HD" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/148-plants-and-water-reflection-stock-video-in-hd" class="free"><img alt="Plants and Water Reflection Stock Video in HD" height="140" src="//static.videezy.com/system/resources/thumbnails/000/000/148/small/plants-watershot.jpg" title="Plants and Water Reflection Stock Video in HD" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/animals-and-wildlife/2416-wet-spider-web-free-hd-stock-footage" class="free"><img alt="Wet Spider Web Free HD Stock Footage" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/416/small/wet-spider-web-free-hd-stock-footage.jpg" title="Wet Spider Web Free HD Stock Footage" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/nature/4132-log-at-falls" class="free"><img alt="Log at Falls" height="140" src="//static.videezy.com/system/resources/thumbnails/000/004/132/small/log-at-falls.jpg" title="Log at Falls" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/travel/266-hawaii-beach-and-ocean-stock-video-in-hd" class="free"><img alt="Hawaii Beach and Ocean Stock Video in HD " height="140" src="//static.videezy.com/system/resources/thumbnails/000/000/266/small/hawaii-ocean-stock-video-in-hd.jpg" title="Hawaii Beach and Ocean Stock Video in HD " width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/travel/2391-yosemite-sprint-2014-hd-stock-video" class="free"><img alt="Yosemite Sprint 2014 HD Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/391/small/yosemite-sprint-2014-hd-stock-video.jpg" title="Yosemite Sprint 2014 HD Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/204-san-francisco-bay-bridge-stock-video-in-hd" class="free"><img alt="San Francisco Bay Bridge Stock Video in HD" height="140" src="//static.videezy.com/system/resources/thumbnails/000/000/204/small/san-francisco-bay-bridge.jpg" title="San Francisco Bay Bridge Stock Video in HD" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/transportation/193-golden-gate-bridge-stock-video-in-hd" class="free"><img alt="Golden Gate Bridge Stock Video in HD " height="140" src="//static.videezy.com/system/resources/thumbnails/000/000/193/small/golden-gate-bridge.jpg" title="Golden Gate Bridge Stock Video in HD " width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/nature/3674-leaf-and-water-drops-stock-video" class="free"><img alt="Leaf and Water Drops Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/003/674/small/leaf-and-drops.jpg" title="Leaf and Water Drops Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/3268-waves-compilation-free-hd-videos" class="free"><img alt="Waves Compilation Free HD Videos" height="140" src="//static.videezy.com/system/resources/thumbnails/000/003/268/small/waves-compilation-free-hd-videos.jpg" title="Waves Compilation Free HD Videos" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/nature/785-seaweed-and-water-stock-video" class="free"><img alt="Seaweed and Water Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/000/785/small/water.jpg" title="Seaweed and Water Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/animals-and-wildlife/2459-jellyfish-hd-stock-video" class="free"><img alt="Jellyfish HD Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/459/small/jellyfish-hd-stock-video.jpg" title="Jellyfish HD Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/119-through-the-reeds-water-stock-video-in-hd" class="free"><img alt="Through The Reeds Water Stock Video in HD" height="140" src="//static.videezy.com/system/resources/thumbnails/000/000/119/small/through-the-reeds.jpg" title="Through The Reeds Water Stock Video in HD" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/arts-and-culture/2458-my-paddle-hd-stock-video" class="free"><img alt="My Paddle HD Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/458/small/my-paddle-hd-stock-video.png" title="My Paddle HD Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/nature/3258-nature-scenes-hd-stock-video" class="free"><img alt="Nature Scenes HD Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/003/258/small/nature-scenes-hd-stock-video.jpg" title="Nature Scenes HD Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/water/203-free-black-boat-stock-video-in-hd" class="free"><img alt="Free Black Boat Stock Video in HD" height="140" src="//static.videezy.com/system/resources/thumbnails/000/000/203/small/black-boat.jpg" title="Free Black Boat Stock Video in HD" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/time-lapse/2196-ferry-ride-timelapse-hd-stock-video" class="free"><img alt="Ferry Ride Timelapse HD Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/196/small/ferry-ride-timelapse-hd-stock-video.jpg" title="Ferry Ride Timelapse HD Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/nature/2305-black-necked-stilt-bird-hd-stock-video" class="free"><img alt="Black Necked Stilt Bird HD Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/305/small/black-necked-stilt-bird-hd-stock-video.jpg" title="Black Necked Stilt Bird HD Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/transportation/2740-fast-motion-train-station-free-hd-video" class="free"><img alt="Fast Motion Train Station Free HD Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/740/small/fast-motion-train-station-free-hd-video.jpg" title="Fast Motion Train Station Free HD Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/nature/2261-passing-landscape-free-hd-stock-yvideo" class="free"><img alt="Passing Landscape Free HD Stock yVideo" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/261/small/passing-landscape-free-hd-stock-yvideo.jpg" title="Passing Landscape Free HD Stock yVideo" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/nature/2404-sparkling-water-hd-stock-video" class="free"><img alt="Sparkling Water HD Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/404/small/sparkling-water-hd-stock-video.png" title="Sparkling Water HD Stock Video" width="200" /></a>
+    </li>
+      <li data-height="129" data-width="173">
+    <a href="/nature/2450-fisher-hunter-hd-stock-video" class="free"><img alt="Fisher &amp; Hunter HD Stock Video" height="140" src="//static.videezy.com/system/resources/thumbnails/000/002/450/small/fisher-hunter-hd-stock-video.jpg" title="Fisher &amp; Hunter HD Stock Video" width="200" /></a>
+    </li>
+</ul>
+
+</section>
+
+<section class="info-section resource-comments">
+  <span class="overlay-comments-closure fa fa-close"></span>
+  <div class="resource-comments-content">
+    <header class="resource-comments-header">
+    <div class="resource-comments-header-closure"></div>
+      <div class="resource-comments-header-info">
+        <div class="resource-comments-header-title">Slow Motion Drop of Water HD Stock Video</div>
+      </div>
+    </header>
+    <h2>Add Your Review</h2>
+    <div class="comments-partial">
+      <form accept-charset="UTF-8" action="/resources/2448-slow-motion-drop-of-water-hd-stock-video/comments" class="comments-form" data-remote="true" id="new-comment-form" method="post"><div style="margin:0;padding:0;display:inline"><input name="utf8" type="hidden" value="&#x2713;" /><input name="authenticity_token" type="hidden" value="kLnlboUkvVP/oWxcEuEoCSLzExcuUtc1FwzJExsI9IQ=" /></div>
+  <div class="comment-author-pic">
+    <img alt="Missing" class="avatar" height="50" src="https://static.videezy.com/assets/users/avatars/small/missing.svg" width="50" />
+  </div>
+
+    <textarea class="require-logged-in" data-target="login-popup" id="DISABLED" name="DISABLED" rel="lightbox">
+</textarea>
+    <div class="submit">
+      <input class="btn require-logged-in" data-target="login-popup" name="commit" rel="lightbox" type="submit" value="Post Comment" />
+    </div>
+
+</form><div class="flash-error"><p>Download link expired.</p></div>
+
+<ol class="comments">
+  <li id="comment_1266">
+  <div class="comment-author-pic">
+    <a href="/members/aaelborollosy" rel="nofollow"><img alt="?height=50&amp;width=50" class="avatar fb-avatar" height="50" src="https://graph.facebook.com/10154088950149319/picture/?height=50&amp;width=50" width="50" /></a>
+  </div>
+  <div class="comment-body">
+    <div class="meta-info">
+      <a href="/members/aaelborollosy" class="author-name" rel="nofollow">aaelborollosy</a>
+    </div>
+    <p>Great nice video, good work really
+<br />where to find the full sound track to use?!</p>
+  </div>
+</li>
+<li id="comment_1138">
+  <div class="comment-author-pic">
+    <a href="/members/LorieArte" rel="nofollow"><img alt="Snapchat-20140828101204" class="avatar" height="50" src="//static.videezy.com/system/users/avatars/000/029/594/small/Snapchat-20140828101204.jpg" width="50" /></a>
+  </div>
+  <div class="comment-body">
+    <div class="meta-info">
+      <a href="/members/LorieArte" class="author-name" rel="nofollow">LorieArte</a>
+    </div>
+    <p>Beautiful. Dig the track as well. I&#x27;m a newbie to video editing software so I&#x27;m far from having a finished product. If I use it, I&#x27;ll be sure to come back and show what I used it for. Thanks!</p>
+  </div>
+</li>
+<li id="comment_1009">
+  <div class="comment-author-pic">
+    <a href="/members/jolleansheart" rel="nofollow"><img alt="Jollean_no_background_-_copy_(2)" class="avatar" height="50" src="//static.videezy.com/system/users/avatars/000/023/742/small/Jollean_no_background_-_Copy_(2).png" width="50" /></a>
+  </div>
+  <div class="comment-body">
+    <div class="meta-info">
+      <a href="/members/jolleansheart" class="author-name" rel="nofollow">jolleansheart</a>
+    </div>
+    <p>Great clip and exactly what I need to make my video on Water Crystals
+<br />It isn&#x27;t complete yet, but soon should be uploaded.  </p>
+
+<p>Thank you so much!
+<br />Jollean</p>
+  </div>
+</li>
+<li id="comment_983">
+  <div class="comment-author-pic">
+    <a href="/members/neodragon" rel="nofollow"><img class="gravatar" alt="" width="50" height="50" src="https://www.gravatar.com/avatar/3c6ac8ec9f3b3f8deb69924284623c98?rating=PG&size=50" /></a>
+  </div>
+  <div class="comment-body">
+    <div class="meta-info">
+      <a href="/members/neodragon" class="author-name" rel="nofollow">neodragon</a>
+    </div>
+    <p>Great clip! Used it as part of a video I made for a remix I produced for a contest. I hope you like it!  https://youtu.be/FglcDsfrN6w</p>
+  </div>
+</li>
+<li id="comment_864">
+  <div class="comment-author-pic">
+    <a href="/members/ruddygirl" rel="nofollow"><img alt="Missing" class="avatar" height="50" src="https://static.videezy.com/assets/users/avatars/small/missing.svg" width="50" /></a>
+  </div>
+  <div class="comment-body">
+    <div class="meta-info">
+      <a href="/members/ruddygirl" class="author-name" rel="nofollow">ruddygirl</a>
+    </div>
+    <p>Thanks so much for your video. Here&#x27;s how we used it :)
+<br />https://www.youtube.com/watch?v=T5mxYq1VHkA</p>
+  </div>
+</li>
+
+</ol>
+
+    </div>
+  </div>
+  <div class="resource-comments-overlay"></div>
+</section>
+
+
+      </div>
+    </div>
+
+
+
+      <section class="sponsors">
+  <div class="max-inner">
+      <div class="sponsors-wrapper">
+        <!-- BuySellAds.com Ad Code -->
+        <!-- END BuySellAds.com Ad Code -->
+
+            <div class="adunit" data-adunit="Videezy_Show_970x250_BottomCenter" data-dimensions="970x250"></div>
+
+
+
+      </div>
+  </div>
+</section>
+
+
+
+    <footer class="site-footer">
+  <div class="max-inner">
+    
+    <div class="row">
+
+      <div class="columns col-4">
+        
+        <a href="http://eezy.com" class="eezy-logo" title="Eezy Inc."><img alt="Eezy-logo" src="https://static.videezy.com/assets/eezy-logo-3ea26c89a4ddb6c0d835c64e0fc6679c.svg" /></a>
+
+        <div class="social-links">
+          <a href="https://www.facebook.com/videezy" target="_blank">
+            <i class="fa fa-facebook"></i>
+</a>          <a href="https://twitter.com/videezy" target="_blank">
+            <i class="fa fa-twitter"></i>
+</a>          <a href="https://google.com/+vecteezy" target="_blank">
+            <i class="fa fa-google-plus"></i>
+</a>          <a href="https://pinterest.com/videezy/" target="_blank">
+            <i class="fa fa-pinterest"></i>
+</a>          <a href="https://instagram.com/eezy/" target="_blank">
+            <i class="fa fa-instagram"></i>
+</a>        </div>
+
+        <p class="footer-copyright">&copy; 2016 Eezy Inc. All rights reserved.</p>
+
+      </div>
+
+      <div class="columns col-2">
+        <h4>Our network</h4>
+        <ul>
+          <li><a href="http://brusheezy.com">Brusheezy</a></li>
+          <li><a href="http://vecteezy.com">Vecteezy</a></li>
+          <li><a href="https://videezy.com">Videezy</a></li>
+          <li><a href="http://themezy.com">Themezy</a></li>
+        </ul>
+      </div>
+
+      <div class="columns col-2">
+        <h4>About Us</h4>
+        <ul>
+          <li><a href="/about">About Us</a></li>
+          <li><a href="http://www.eezy.com/team">Our Team</a></li>
+          <li><a href="/blog">Our Blog</a></li>
+          <li><a href="/contact">Contact Us</a></li>
+        </ul>
+      </div>
+
+      <div class="columns col-2">
+        <h4>Site links</h4>
+        <ul>
+          <li><a href="/deals">Deals</a></li>
+          <li><a href="/advertising">Advertise</a></li>
+          <li><a href="/support">Support</a></li>
+          <li><a href="/terms">Terms &amp; Privacy</a></li>
+        </ul>
+      </div>
+
+      <div class="columns col-2">
+        <h4>Languages</h4>
+        <ul>
+          <li>
+            <a href="https://www.videezy.com/ink-drops-and-splatters/2448-slow-motion-drop-of-water-hd-stock-video">English</a>
+          </li>
+          <li>
+            <a href="https://es.videezy.com/ink-drops-and-splatters/2448-slow-motion-drop-of-water-hd-stock-video">Español</a>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+
+  </div>
+</footer>
+
+                      <div class="lightbox license-lightbox" id="license-popup">
+                    <a class="close" rel="close">Close</a>
+
+                    <h3>You are allowed to:</h3>
+                    <p>Download, edit, and remix for personal and commercial use, but give credit back to the author in one of the following ways</p>
+                    <ul class="attribution-list">
+                      <li><strong>For Video:</strong> please add "Videezy.com" in the final credits</li>
+                      <li><strong>For Print:</strong> please add "Videezy.com" in the final copy</li>
+                      <li><strong>For Websites:</strong> copy and paste the following code for attribution</li>
+                    </ul>
+
+                    <div class="copyright-link-wrapper" data-clipboard-target="#copyright-link">
+                        <div contenteditable id="copyright-link">
+                         B Roll by &lt;a href=&quot;http://www.videezy.com&quot;&gt;Videezy.com&lt;/a&gt;
+                        </div>
+                      <div class="copied">Copied!</div>
+                    </div>
+
+                    <h3>You are not allowed to:</h3>
+
+                    <ul class="prohibited-list">
+                      <li>Rent, license, sublicense or sell this file or a modified version of it.</li>
+                      <li>Redistribute this file online or offline unless authorized.</li>
+                    </ul>
+
+
+                    <p>
+                      View more work by <a href="/members/Mazwai">Mazwai</a><br />
+                      Visit our <a href="/frequently-asked-questions">FAQ</a> page.
+                    </p>
+                    
+                  </div>
+            <div class="lightbox" id="meta-info-popup">
+              <a class="close" rel="close">Close</a>
+              <div id="meta-info">
+                <h2>Video Metadata</h2>
+                <table>
+                  <tbody>
+                      <tr>
+                        <th>Duration</th>
+                        <td>00:00:38</td>
+                      </tr>
+                      <tr>
+                        <th>File type</th>
+                        <td>mp4</td>
+                      </tr>
+                      <tr>
+                        <th>Framerate</th>
+                        <td>24 fps</td>
+                      </tr>
+                      <tr>
+                        <th>Video codec</th>
+                        <td>ffh264</td>
+                      </tr>
+                      <tr>
+                        <th>Video bitrate</th>
+                        <td>1.91 MB/s</td>
+                      </tr>
+                      <tr>
+                        <th>Audio codec</th>
+                        <td>ffaac</td>
+                      </tr>
+                      <tr>
+                        <th>Audio bitrate</th>
+                        <td>154 KB/s</td>
+                      </tr>
+
+                  </tbody>
+                </table>
+              </div> 
+            </div>
+
+
+    <div class="footer-popup-flyin istock">
+  <a href="#" class="popup-closure"></a>
+  <header class="popup-flyin-header">
+    <img alt="Placeholder-gift-box" src="https://static.videezy.com/assets/PLACEHOLDER-gift-box-afb4eff8d5c47af881c6ed1a4a87dd08.jpg" />
+    <h3>
+      Here's an exclusive <strong>iStock promo code</strong> to save <strong>15% off</strong> credits of 30 or more!
+    </h3>
+  </header>
+  <div class="popup-flyin-content">
+  
+    <div class="promo-code">
+      <div class="copy-text" id="istock-promo-code">15GETEEZY</div>
+      <button class='btn-copy' data-clipboard-target='istock-promo-code' data-clipboard-text='15GETEEZY' id='istock-btn-copy' title='Copy'>Copy</button>
+    </div>
+
+    <p class="before-action">
+      Paste this code at checkout when you are done shopping. <br />
+      Not sure where to paste it? 
+      <a href="#" class="toggle-instructions" title="View instructions">View instructions</a>
+    </p> 
+    <p class="after-action">
+      Paste this code at checkout when you are done shopping.  <br />
+      Not sure where to paste it? Visit <a href="https://istockphoto.com">iStockphoto.com</a> and paste this code...
+    </p>     
+
+    <div class="popup-instructions">
+      <img alt="Istock-instructions" class="bobble-this" src="https://static.videezy.com/assets/istock-instructions-5a37f425339e5a567fb52ff037c7450f.jpg" />
+    </div>
+
+  </div>
+</div>
+<div class="footer-popup-overlay"></div>
+
+
+      <div id="login-popup" class="lightbox with-sidebar">
+  <a class="close" rel="close">close</a>
+  <div class="main">
+    <form accept-charset="UTF-8" action="/login" class="account-form" data-remote="true" id="new_eezyauth_user_auth_session" method="post"><div style="margin:0;padding:0;display:inline"><input name="utf8" type="hidden" value="&#x2713;" /><input name="authenticity_token" type="hidden" value="kLnlboUkvVP/oWxcEuEoCSLzExcuUtc1FwzJExsI9IQ=" /></div>
+      <h1>Login to Videezy</h1>
+
+
+      <div class="row">
+        <input class="text" id="eezyauth_user_auth_session_username" name="eezyauth_user_auth_session[username]" placeholder="Username/Email Address" size="30" type="text" />
+      </div>
+      <div class="row">
+        <input class="text smaller" id="eezyauth_user_auth_session_password" name="eezyauth_user_auth_session[password]" placeholder="Password" size="30" type="password" />
+      </div>
+      <div class="row">
+        <a href="/reset_passwords/new" class="reset-password-link quiet right" data-target="reset-password-popup" rel="lightbox">Forgot your password?</a>
+        <label class="with-checkbox">
+          <input name="eezyauth_user_auth_session[remember_me]" type="hidden" value="0" /><input checked="checked" id="check-keep-login" name="eezyauth_user_auth_session[remember_me]" type="checkbox" value="1" /> Keep me logged in
+        </label>
+      </div>
+      <div class="row">
+        <input class="btn primary submit" id="login-button" name="commit" type="submit" value="Login" />
+      </div>
+      <div class="row">
+        Don&#x27;t have an account?
+        
+          <a href="/signup">Join Eezy!</a>
+        
+      </div>
+</form>  </div>
+  <aside class="sidebar">
+    <p>Or use your Facebook account&hellip;</p>
+    <div class="facebook_register">
+      <span class="btn__fb-login"><i class="fa fa-facebook-official"></i>Facebook</span>
+      <fb:login-button onlogin="connected_to_facebook();" scope="email">Facebook</fb:login-button>
+    </div>
+      <div class="resource-download-link hidden">
+        <a href="/resources/2448-slow-motion-drop-of-water-hd-stock-video/download-file">Not right now, just download it!</a>
+      </div>
+  </aside>
+</div>
+
+
+      <div id="reset-password-popup" class="lightbox with-sidebar">
+  <a class="close" rel="close">close</a>
+  <div class="main">
+    <form accept-charset="UTF-8" action="/reset_passwords" class="account-form" data-remote="true" id="password-reset" method="post"><div style="margin:0;padding:0;display:inline"><input name="utf8" type="hidden" value="&#x2713;" /><input name="authenticity_token" type="hidden" value="kLnlboUkvVP/oWxcEuEoCSLzExcuUtc1FwzJExsI9IQ=" /></div>
+      <h1>Forgot your password?</h1>
+      <div class='row'>
+        <input autocomplete="false" class="text" id="eezyauth_user_auth_email" name="eezyauth_user_auth[email]" placeholder="Enter Your Email Address" size="30" type="text" />
+      </div>
+      <div class="row">
+        <input class="btn primary submit" name="commit" type="submit" value="Reset password!" />
+        <span class="quiet">or&nbsp;<a rel="close" href="#">Back to Login</a></span>
+      </div>
+</form>  </div>
+  <aside class="sidebar">
+    <p>Or use your Facebook account&hellip;</p>
+    <div class="facebook_register">
+      <span class="btn__fb-login"><i class="fa fa-facebook-official"></i>Facebook</span>
+      <fb:login-button onlogin="connected_to_facebook();" scope="email">Facebook</fb:login-button>
+    </div>
+  </aside>
+</div>
+
+
+
+      <script src="https://static.videezy.com/assets/essential_top_scripts-c7b8836a16de3db7ce0be7a2f6d29c05.js" type="text/javascript"></script>
+      <script src="https://static.videezy.com/assets/shutterstock-api-27f8fb73f5ec449fec226005b91bc7ee.js" type="text/javascript"></script>
+      <script src="https://static.videezy.com/assets/application-9e6f5a169471aec31ba361b8211cf35e.js" type="text/javascript"></script>
+      <script src="https://static.videezy.com/assets/redesign-functionality-6bf4ca9b2811703f05d6180f8ed6bfdd.js" type="text/javascript"></script>
+      <script src="https://static.videezy.com/assets/eezy-premium-popup-f7e44da75a75964990ce73ea7530b5db.js" type="text/javascript"></script>
+        <script type="text/javascript">
+      $(document).ready(function() {
+        $('body').on('click', 'a.affiliate-shutterstock', function(e) {
+          $.post('/affiliate_clicks/similar/2448')
+          return true;
+        });
+        $('body').on('click', 'a.free', function(e) {
+          $.post('/clicks/similar/2448')
+          return true;
+
+        });
+      });
+    </script>
+  <script src="https://static.videezy.com/assets/video-3616dca79054fdc92256096ebf2f7b4c.js" type="text/javascript"></script>
+  <script>
+    $('#preview-video').mediaelementplayer({
+      features: ['playpause','progress','current','duration','volume','fullscreen','googleanalytics','tracking']
+    });
+  </script>
+                    <script type="text/javascript">
+                      $('#licenses-popup').on('click', function() {
+                        track("copyright-license-popup", "click");  
+                      });
+                    </script>
+  <script type="text/javascript"> 
+    (function() { 
+    var search = $('[name=eezysearch]').val(); 
+    var resourceID = $('[name=eezy-resource-id]').val(); 
+    var ref = $('[name=eezyref]').val(); 
+    var pos = $('[name=eezypos]').val();
+
+    var sub_id_1 = "similar";
+
+    var sh_atid = "sharedid=videezy&subId1="+ sub_id_1 + "&subId2=" + resourceID + "&subId3=" +getCookie("originalReferrer");
+
+    $(document).on("click", ".eezyapi[data-affiliate='shutterstock'] li a", function(e) { 
+      track("similar_click", search, "shutterstock"); 
+    });
+
+    $('.eezyapi[data-affiliate=shutterstock]').each(function() { 
+      $(this).data('urlparams', sh_atid); 
+      $(this).data('ird', '38919');
+      $(this).data('loc', 'en');
+        $(this).data('apiparams', "type=video&s=videezy");
+    });
+
+    $('.eezyapi').live('resultsLoaded', function() { 
+      $('.eezyapi ul.is--sponsored li').addClass('starred');
+      $('#similar').show(); 
+    }) 
+    })(); 
+  </script>
+
+  <script class="shutterstock result" type="text/template"> 
+  <li><a title="{{description}}" target="_new" href="{{url}}" class="affiliate-shutterstock"><span><img src="{{image_url}}" alt="{{description}}"/></span></a></li> 
+  </script>
+    <script type="text/javascript">
+      $('#download-button').on('click', function() {
+        updatePopCookie();
+      });
+      var download_file_url = "/download/2448-slow-motion-drop-of-water-hd-stock-video/67a902b1";
+    </script>
+    <script type="text/javascript" src="https://s3.amazonaws.com/fancypop/fancypop-dfp-videezy.js"></script>
+
+  <script type="text/javascript">
+    $('#search-form').on('submit', function() {
+      track('search', 'show_page', $('#search-term').val());
+      return true;
+    });
+  </script>
+  <script>
+    $("[data-target='login-popup']").live('click', function(e) {
+      var target = $(this).data('target');
+
+      if ( target != undefined ) {
+        $('#' + target).lightbox_me({
+          onLoad: function() {
+            // insert fb button
+            // $('#login-popup .facebook_register').html('<fb:login-button onlogin="connected_to_facebook();" scope="email">Facebook</fb:login-button>');
+            // Additional JS functions here
+            window.fbAsyncInit = function() {
+              FB.init({
+                appId      : '433618560134484', // App ID
+                channelUrl : '//www.videezy.com/channel.html', // Channel File
+                status     : true, // check login status
+                cookie     : true, // enable cookies to allow the server to access the session
+                version    : 'v2.1',
+                xfbml      : true  // parse XFBML
+              });
+
+              FB.Event.subscribe('edge.create', function(href, widget) {
+                pageTracker._trackEvent('facebook', 'like', href);
+              });
+              FB.Event.subscribe('auth.login', function(e) {
+                return false;
+              });
+            };
+
+            // Load the SDK Asynchronously
+            (function(d){
+               var js, id = 'facebook-jssdk', ref = d.getElementsByTagName('script')[0];
+               if (d.getElementById(id)) {return;}
+               js = d.createElement('script'); js.id = id; js.async = true;
+               js.src = "//connect.facebook.net/en_US/sdk.js";
+               ref.parentNode.insertBefore(js, ref);
+             }(document));
+
+
+          }
+        });
+      }
+      e.preventDefault();
+    });
+
+    function connected_to_facebook() {
+      FB.getLoginStatus(function(response) {
+        if (response.status == "connected") {
+          trackFacebookLogin();
+          window.location.href = "/auth/facebook/callback?" + $.param({ signed_request: response.authResponse.signedRequest });
+        }
+      });
+            }
+  </script>
+  <script>
+
+    $( "iframe" ).contents().find( "img" ).css( "background-color", "#BADA55" );
+
+  </script>
+
+
+    
+      <script type="text/javascript">function pu(e){var o=$(window).width()-200,u=$(window).height()-50,n="toolbar=0,statusbar=1,resizable=1,scrollbars=0,menubar=0,location=1,directories=0";-1!=navigator.userAgent.indexOf("Chrome")&&(n="scrollbar=yes");var t=window.open("about:blank","",n+",height="+u+",width="+o);-1!=navigator.userAgent.indexOf("rv:2.")?(t.puPop=function(e){-1!=navigator.userAgent.indexOf("rv:2.")&&this.window.open("about:blank").close(),this.document.location.href=e},t.puPop(e)):t.document.location.href=e,setTimeout(window.focus,200),window.focus(),t?(t.window.open("about:blank").close(),t.moveTo(window.screenX+2,window.screenY+2),t.blur(),self.focus()):(done_pu=null,ifSP2=!1,"undefined"==typeof pu_window&&(pu_window=!1),window.SymRealWinOpen&&(open=SymRealWinOpen),window.NS_ActualOpen&&(open=NS_ActualOpen),ifSP2=-1!=navigator.userAgent.indexOf("SV1"),ifSP2?(window.Event&&document.captureEvents(Event.CLICK),document.onclick=doClickedPu):doPu(),self.focus(),doClickedPu())}function doPu(){pu_window||(done_pu=open(pu_url,"","toolbar=1,location=1,directories=0,status=1,menubar=1,scrollbars=1,resizable=1"),done_pu&&(pu_window=!0,self.focus()))}function doClickedPu(){pu_window||ifSP2||(done_pu=open(pu_url,"","toolbar=1,location=1,directories=0,status=1,menubar=1,scrollbars=1,resizable=1"),self.focus(),done_pu&&(pu_window=!0)),pu_window||(window.Event&&document.captureEvents(Event.CLICK),document.onclick=doPu,self.focus())}"undefined"!=typeof is_home_page?popup_subid="SearchPopHome":"undefined"!=typeof is_show_page?popup_subid="SearchPopShow":"undefined"!=typeof is_search_page?popup_subid="SearchPopSearch":popup_subid="SearchPopOther";var term=$("#search-term").val(),pu_url="http://shutterstock.7eer.net/c/38919/111120/1305?subId1="+popup_subid+"&subId2="+encodeURI(term)+"&subId3="+getCookie("originalReferrer")+"&u=http%3A%2F%2Ffootage.shutterstock.com%2Fsearch%2F"+encodeURI(term)+"&sharedid=videezy",pu_prem=$('input[name="eezypremium"]').val(),pu_pct=33,pu_window;$("#search-form").submit(function(){return term=$("#search-term").val(),"undefined"!=typeof is_home_page?popup_subid="SearchPopHome":"undefined"!=typeof is_show_page?popup_subid="SearchPopShow":"undefined"!=typeof is_search_page?popup_subid="SearchPopSearch":popup_subid="SearchPopOther",pu_url="http://shutterstock.7eer.net/c/38919/111120/1305?subId1="+popup_subid+"&subId2="+encodeURI(term)+"&subId3="+getCookie("originalReferrer")+"&u=http%3A%2F%2Ffootage.shutterstock.com%2Fsearch%2F"+encodeURI(term)+"&sharedid=videezy","1"!=pu_prem&&Math.floor(100*Math.random())<pu_pct&&!$.cookies.get("popped")?($.cookies.set("popped","1",{hoursToLive:.5}),track("popunder",term),pu(pu_url),!0):!0});</script>
+  </body>
+</html>

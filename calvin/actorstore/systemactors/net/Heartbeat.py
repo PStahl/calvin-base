@@ -107,9 +107,9 @@ class Heartbeat(Actor):
                 host = uri.split(":")[0]
                 port = uri.split(":")[1]
                 port = int(port) + 5001
-                _log.debug("Sending heartbeat to node {} at {}".format(node_id, (host, port)))
+                _log.info("Sending heartbeat to node {} at {}".format(node_id, (host, port)))
                 node_ids.append(node_id)
-                data = {'node_id': self.node.id, 'uri': self.node.uri}
+                data = {'node_id': self.node.id, 'uri': self.node.uri, 'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")}
                 try:
                     self.sender.sendto(json.dumps(data), (host, port))
                 except Exception as e:
@@ -131,9 +131,12 @@ class Heartbeat(Actor):
             node_id = data['node_id']
             uri = data['uri']
 
-            self.node.clear_outgoing_heartbeat(data)
-            self.node.resource_manager.register(node_id, {}, uri)
-            self.register(node_id)
+            if node_id in self.lost_nodes:
+                print "GOT HEARTBEAT FROM LOST NODE: {}".format(node_id)
+            else:
+                self.node.clear_outgoing_heartbeat(data)
+                self.node.resource_manager.register(node_id, {}, uri)
+                self.register(node_id)
 
         return ActionResult(production=("",))
 
@@ -156,5 +159,5 @@ class Heartbeat(Actor):
             self.port = None
         return status
 
-    action_priority = (send, receive, dummy)
+    action_priority = (send, dummy, receive, dummy)
     requires = ['calvinsys.network.socketclienthandler', 'calvinsys.native.python-re', 'calvinsys.native.python-json']

@@ -269,6 +269,9 @@ class Node(object):
         if lost_node_id in value:
             value.remove(lost_node_id)
 
+        _log.info("APP_INFO: [{}]".format(len(value)))
+        return
+
         nodes = [(node_id, self.resource_manager.node_uris.get(node_id)) for node_id in value]
         _log.debug("CURRENT NODES: {} {}".format(len(nodes), nodes))
 
@@ -290,7 +293,7 @@ class Node(object):
             self._failure_times[uri] = None
 
         for uri in uris:
-            callback = CalvinCB(self._collect_failure_times, nodes=nodes, required=required, 
+            callback = CalvinCB(self._collect_failure_times, nodes=nodes, required=required,
                                 current_nodes=current_nodes, replication_times=value)
             self.storage.get_failure_times(uri, callback)
 
@@ -322,7 +325,7 @@ class Node(object):
         cpu_avgs = self.resource_manager.get_avg_usages()
 
         self.info("APP_INFO: [{}] [{}] [{}] [{}] [{}] [{}] [{}] [{}]".format(
-            len(nodes), nodes, rels, actual_rel, required, rep_time, self._failure_times, str(cpu_avgs)))
+            len(nodes), nodes, rels, actual_rel, required, rep_time, [], str(cpu_avgs)))
 
     def _get_rels(self, replication_times, failure_times):
         all_nodes = self.network.list_links()
@@ -361,7 +364,7 @@ class Node(object):
     def register_resource_usage(self, node_id, usage, callback):
         if self.storage_node:
             callback(status=response.CalvinResponse(True))
-            return        
+            return
         _log.debug("Registering resource usage for node {}: {}".format(node_id, usage))
         uri = usage.get('uri')
 
@@ -406,7 +409,7 @@ class Node(object):
 
     def _heartbeat_timeout(self, timestamp, node_id):
         diff = datetime.now() - (timestamp + timedelta(seconds=HEARTBEAT_TIMEOUT))
-        print "LOST NODE: [{}], [{}] [{}] [{}]".format(node_id, datetime.now(), timestamp + timedelta(seconds=HEARTBEAT_TIMEOUT), diff.total_seconds())
+        print "LOST NODE: [{}] [{}] [{}] [{}]".format(node_id, datetime.now(), timestamp + timedelta(seconds=HEARTBEAT_TIMEOUT), diff.total_seconds())
         _log.error("LOST NODE: [{}], [{}] [{}] [{}]".format(node_id, datetime.now(), timestamp + timedelta(seconds=HEARTBEAT_TIMEOUT), diff.total_seconds()))
         self._clear_heartbeat_timeouts(node_id)
         self.heartbeat_actor.deregister(node_id)
@@ -415,6 +418,8 @@ class Node(object):
     def clear_outgoing_heartbeat(self, data):
         if "node_id" in data:
             node_id = data['node_id']
+            timestamp = data['timestamp']
+            #print "RECEIVED: {} - {}".format(datetime.now(), timestamp)
             self._clear_heartbeat_timeouts(node_id)
             timeout_call = async.DelayedCall(HEARTBEAT_TIMEOUT, CalvinCB(self._heartbeat_timeout, timestamp=datetime.now(), node_id=node_id))
             self.outgoing_heartbeats[node_id].append(timeout_call)

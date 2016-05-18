@@ -16,6 +16,8 @@
 
 from twisted.internet import reactor
 
+from datetime import datetime
+
 
 class DelayedCall(object):
 
@@ -35,11 +37,15 @@ class DelayedCall(object):
 
 
 def run_ioloop():
+    #print "RUN IO LOOP"
     reactor.run()
+    #print "AFTER RUN IO LOOP [{}]".format(datetime.now())
 
 
 def stop_ioloop():
+    #print "STOP IO LOOP"
     reactor.stop()
+    #print "AFTER STOP IO LOOP [{}]".format(datetime.now())
 
 
 # Thread function

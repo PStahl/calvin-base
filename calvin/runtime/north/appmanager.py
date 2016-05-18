@@ -46,7 +46,7 @@ class Application(object):
         self.components = {}
         self.deploy_info = deploy_info
         self._collect_placement_cb = None
-        self.required_reliability = 0.98
+        self.required_reliability = 0.999999
 
     def add_actor(self, actor_id):
         # Save actor_id and mapping to name while the actor is still on this node

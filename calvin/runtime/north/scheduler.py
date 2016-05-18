@@ -46,11 +46,14 @@ class Scheduler(object):
         async.run_ioloop()
 
     def stop(self):
+        #print "STOPPING scheduler"
         if not self.done:
             async.DelayedCall(0, async.stop_ioloop)
+        #print "STOPPED scheduler"
         self.done = True
 
     def loop_once(self, all_=False):
+        #print "LOOP ONCE"
         activity = self.monitor.loop(self)
 
         # If all ignore the set
@@ -77,9 +80,11 @@ class Scheduler(object):
             if self._heartbeat_loop is not None:
                 self._heartbeat_loop.cancel()
             self._heartbeat_loop = async.DelayedCall(self._heartbeat, self.trigger_loop)
+        #print "DONE LOOP ONCE"
 
     def trigger_loop(self, delay=0, actor_ids=None):
         """ Trigger the loop_once potentially after waiting delay seconds """
+        #print "TRIGGER LOOP"
 
         if delay > 0:
             _log.debug("Delayed trigger %s" % delay)
@@ -103,10 +108,13 @@ class Scheduler(object):
                 if self._loop_once is None:
                     self._loop_once = async.DelayedCall(0, self.loop_once)
 
+        #print "DONE TRIGGER LOOP"
+
     def _log_exception_during_fire(self, e):
         _log.exception(e)
 
     def fire_actors(self, actor_ids=None):
+        #print "FIRE ACTORS"
         total = ActionResult(did_fire=False)
         total.actor_ids = set()
 
@@ -129,6 +137,7 @@ class Scheduler(object):
                 #self.actor_mgr.delete_actor(actor.id, delete_from_app=True)
 
         self.idle = not total.did_fire
+        #print "DONE FIRE ACTORS"
         return total
 
 

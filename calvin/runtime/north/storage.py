@@ -41,6 +41,7 @@ class Storage(object):
     """
 
     def __init__(self, node):
+        self._min_count = 100
         self.localstore = {}
         self.localstore_sets = {}
         self.started = False
@@ -257,6 +258,11 @@ class Storage(object):
         if value:
             value = self.coder.decode(value)
             value = value if value else []
+            if "replication-time" in key:
+                l = list(set(value + local_list))
+                if len(l) > self._min_count:
+                    self._min_count += 100
+                    print "REP TIMES: ", len(l), l
             org_cb(org_key, list(set(value + local_list)))
         else:
             org_cb(org_key, local_list if local_list else None)
