@@ -573,17 +573,17 @@ class Storage(object):
         self.trigger_flush()
 
     def add_actor_to_app(self, app_id, actor_id, cb=None, *args, **kwargs):
-        _log.info("Adding actor {} to app actors for app {}".format(actor_id, app_id))
+        _log.debug("Adding actor {} to app actors for app {}".format(actor_id, app_id))
         cb = CalvinCB(func=self.append_cb, org_key=None, org_value=None, org_cb=cb)
         self.append("app-actors-", key=app_id, value=[actor_id], cb=cb)
 
     def add_replica_nodes(self, app_id, name, node_id, cb=None, *args, **kwargs):
-        _log.info("Adding node {} to replica nodes of app {} actor name {}".format(node_id, app_id, name))
+        _log.debug("Adding node {} to replica nodes of app {} actor name {}".format(node_id, app_id, name))
         cb = CalvinCB(func=self.append_cb, org_key=None, org_value=None, org_cb=cb)
         self.append("replica-nodes-", key=app_id + ":" + name, value=[node_id], cb=cb)
 
     def add_node_actor(self, node_id, actor_id, cb=None, *args, **kwargs):
-        _log.info("Adding actor {} to node actors for node {}".format(actor_id, node_id))
+        _log.debug("Adding actor {} to node actors for node {}".format(actor_id, node_id))
         cb = CalvinCB(func=self.append_cb, org_key=None, org_value=None, org_cb=cb)
         self.append("node-actors-", key=node_id, value=[actor_id], cb=cb)
         self.trigger_flush()
@@ -626,7 +626,7 @@ class Storage(object):
         self.remove("replica-nodes-", key=app_id + ":" + name, value=[node_id], cb=cb)
 
     def new_replication_time(self, actor_type, replication_time, cb=None):
-        _log.info("Storing replication time {} of actor type {}".format(replication_time, actor_type))
+        _log.debug("Storing replication time {} of actor type {}".format(replication_time, actor_type))
         cb = CalvinCB(func=self.append_cb, org_key=None, org_value=None, org_cb=cb)
         self.append("replication-time-", key=actor_type, value=[replication_time], cb=cb)
 
@@ -638,7 +638,7 @@ class Storage(object):
 
     def add_failure_time(self, uri, node_id, timestamp, cb=None):
         """Store a time for failure for node with uri uri"""
-        _log.info("Checking if we should store failure time {} for uri {}".format(timestamp, uri))
+        _log.debug("Checking if we should store failure time {} for uri {}".format(timestamp, uri))
         cb = CalvinCB(self._add_failure_time, node_id=node_id, timestamp=timestamp, cb=cb)
         self.get_concat(prefix="failure-node-ids-", key=uri, cb=cb)
 
@@ -647,7 +647,7 @@ class Storage(object):
             _log.warning("Already stored failure time for node {} - {}".format(key, node_id))
             timestamp = []
         else:
-            _log.info("Failure time for {} not stored yet, storing".format(node_id))
+            _log.debug("Failure time for {} not stored yet, storing".format(node_id))
             timestamp = [timestamp]
 
         cb = CalvinCB(func=self._add_uri_failure_time, uri=key, timestamp=timestamp, cb=cb)
@@ -656,7 +656,7 @@ class Storage(object):
 
     def _add_uri_failure_time(self, key, value, uri, timestamp, cb):
         cb = CalvinCB(func=self.append_cb, org_key=None, org_value=None, org_cb=cb)
-        _log.info("Storing failure time {} for uri {}".format(timestamp, uri))
+        _log.debug("Storing failure time {} for uri {}".format(timestamp, uri))
         self.append("failure-times-", key=uri, value=timestamp, cb=cb)
         self.trigger_flush()
 

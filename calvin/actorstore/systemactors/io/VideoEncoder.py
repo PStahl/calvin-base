@@ -19,6 +19,9 @@ import json
 import copy
 
 from calvin.actor.actor import Actor, ActionResult, manage, condition
+from calvin.utilities.calvinlogger import get_logger
+
+_log = get_logger(__name__)
 
 
 class VideoEncoder(Actor):
@@ -38,6 +41,7 @@ class VideoEncoder(Actor):
         self.use("calvinsys.media.encoder", shorthand="encoder")
         self.encoder = self["encoder"]
         self._replicate = replicate
+        self.s = None
 
     @property
     def replicate(self):
@@ -45,6 +49,7 @@ class VideoEncoder(Actor):
 
     @condition(['in'])
     def encode(self, data):
+        #_log.info("\n\n\nENCODE")
         data = copy.deepcopy(data)
         url = data['url']
         host = url.split(":")[0]
@@ -59,18 +64,22 @@ class VideoEncoder(Actor):
         if frame:
             data['frame'] = self.encoder.encode(frame, ".jpg").decode("latin-1")
 
+        data['id'] = self.id
+        data['url'] = self.node._clean_uri()
+
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             s.connect((host, port))
-        except:
+        except Exception as e:
+            print "failed to connect.", e
             return ActionResult(production=())
-
-        data['id'] = self.id
         try:
             s.sendall(json.dumps(data))
-        except:
+        except Exception as e:
+            print "failed to send.", e
             pass
 
+        #_log.info("ENCODE DONE")
         return ActionResult(production=())
 
     action_priority = (encode, )

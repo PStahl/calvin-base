@@ -18,6 +18,9 @@ import json
 
 from calvin.actor.actor import Actor, ActionResult, manage, condition, guard
 from calvin.runtime.north.calvin_token import EOSToken, ExceptionToken
+from calvin.utilities.calvinlogger import get_logger
+
+_log = get_logger(__name__)
 
 
 class VideoReader(Actor):
@@ -27,13 +30,12 @@ class VideoReader(Actor):
 
     Inputs:
       filename : File to read. If file doesn't exist, an ExceptionToken is produced
-      trigger : #
     Outputs:
       out : data with frame, frame count and url to send it to
     """
 
     @manage([])
-    def init(self):
+    def init(self, sleep=0.005):
         self.did_read = False
         self.file_not_found = False
         self.video = None
@@ -42,6 +44,9 @@ class VideoReader(Actor):
         self.filename = None
         self.url = None
         self.can_read = False
+        self.images = []
+        self.use("calvinsys.events.timer", shorthand="timer")
+        self.timer = self['timer'].repeat(sleep)
 
     @condition(['filename'])
     @guard(lambda self, filename: not self.video and not self.filename)
@@ -57,6 +62,12 @@ class VideoReader(Actor):
         except Exception as e:
             self.video = None
             self.file_not_found = True
+
+        #self.images = []
+        #image = self.video.get_image()
+        #while image:
+        #    self.images.append(image)
+        #    image = self.video.get_image()
         return ActionResult()
 
     @condition([])
@@ -66,29 +77,27 @@ class VideoReader(Actor):
         self.file_not_found = False  # Only report once
         return ActionResult(production=(token, ))
 
-    @condition(['trigger'], ['out'])
-    @guard(lambda self, trigger: self.video and self.url and not self.end_of_file and self.can_read)
-    def read(self, trigger):
+    @condition([], ['out'])
+    @guard(lambda self: self.timer.triggered and self.video and self.url and not self.end_of_file)
+    def read(self):
+        _log.info("READ: {}".format(self.frame_count))
+        self.timer.ack()
         data = {
             'frame_count': -1,
             'url': self.url
         }
-        image = self.video.get_image()
-        if image:
+        image = self.video.get_image()  # images[self.frame_count]  # self.video.get_image()
+        if image:  # self.frame_count < len(self.images):
+            #image = self.images[self.frame_count]  # self.video.get_image()
             data['frame'] = image
             data['frame_count'] = self.frame_count
             self.frame_count += 1
         else:
             self.end_of_file = True
 
-        self.can_read = False
+        #self.can_read = False
+        _log.info("READ DONE: {}".format(self.frame_count))
         return ActionResult(production=(data, ))
-
-    @condition(['trigger'])
-    @guard(lambda self, token: self.video and not self.end_of_file)
-    def trigger(self, token):
-        self.can_read = True
-        return ActionResult(production=())
 
     @condition([])
     @guard(lambda self: self.video and self.end_of_file)
@@ -99,7 +108,7 @@ class VideoReader(Actor):
         self.can_read = False
         return ActionResult()
 
-    action_priority = (open_file, file_not_found, read, trigger, eof)
+    action_priority = (open_file, file_not_found, read, eof)
     requires =  ['calvinsys.media.videohandler']
 
     test_set = []

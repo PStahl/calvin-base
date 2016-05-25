@@ -35,7 +35,7 @@ class ReliabilityCalculator(object):
     def get_mtbf(self, failure_times):
         MTBF = self.default_mtbf
         _log.debug("Get mtbf from {}".format(failure_times))
-        times = sorted(failure_times)
+        times = sorted(failure_times) if failure_times else []
 
         if len(times) > 2:
             times = times[-3:]  # use only three latest

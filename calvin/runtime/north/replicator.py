@@ -73,7 +73,7 @@ class Replicator(object):
 
         connected_nodes = set(self.node.network.list_links())
         _log.debug("Connected nodes: {}".format(connected_nodes))
-        _log.info("Storage returned replica nodes: {}".format(value))
+        _log.debug("Storage returned replica nodes: {}".format(value))
 
         current_nodes = set(value)
 
@@ -93,7 +93,7 @@ class Replicator(object):
                                                                                         start_time=start_time, cb=cb))
 
     def _get_replication_times(self, key, value, current_nodes, start_time, cb):
-        _log.info("Storage return replication times {} for actor_type {}".format(value, self.actor_info['type']))
+        _log.debug("Storage return replication times {} for actor_type {}".format(value, self.actor_info['type']))
         self._replication_times = value
         self.replication_time = self.node.resource_manager.replication_time(self._replication_times)
 
@@ -102,7 +102,7 @@ class Replicator(object):
         for uri in uris:
             self._failure_times[uri] = None
 
-        _log.info("Asking storage for failure times of {}".format(uris))
+        _log.debug("Asking storage for failure times of {}".format(uris))
         for uri in uris:
             if uri:
                 self.node.storage.get_failure_times(uri, cb=CalvinCB(self._get_failure_times, current_nodes=current_nodes,
@@ -116,7 +116,7 @@ class Replicator(object):
             del self._failure_times[uri]
 
         if not None in self._failure_times.values():
-            _log.info("All failure times: {}".format(self._failure_times))
+            _log.debug("All failure times: {}".format(self._failure_times))
             cb = CalvinCB(self._find_app_actors, current_nodes=current_nodes, start_time=start_time, cb=cb)
             self.node.storage.get_application_actors(self.actor_info['app_id'], cb)
 
@@ -230,7 +230,7 @@ class Replicator(object):
                 else:
                     _log.info("Asking {} to replicate actor {} to node {}".format(
                         replica_value['node_id'], replica_id, to_node_id))
-                    _log.info("Asking {} - {}".format(to_node_id, self.node.resource_manager.node_uris.get(to_node_id)))
+                    _log.debug("Asking {} - {}".format(to_node_id, self.node.resource_manager.node_uris.get(to_node_id)))
                     self.node.proto.actor_replication_request(replica_id, replica_value['node_id'], to_node_id, self.replication_time, cb)
 
     def _find_node_to_replicate_to(self, current_nodes):
@@ -311,11 +311,11 @@ class Replicator(object):
         self.node.storage.get_replica_nodes(self.actor_info['app_id'], self.actor_info['name'], cb)
 
     def _optimize(self, current_nodes):
-        _log.info("Optimizing replica nodes")
+        _log.debug("Optimizing replica nodes")
         available_nodes = self._find_available_nodes(current_nodes)
         available_nodes = self.node.resource_manager.get_preferred_nodes(available_nodes)
         if not available_nodes or not current_nodes:
-            _log.info("No available nodes or no current nodes. Available: {}. Current: {}".format(available_nodes, current_nodes))
+            _log.warning("[OPTIMIZE] No available nodes or no current nodes. Available: {}. Current: {}".format(available_nodes, current_nodes))
             return
 
         available_nodes = self.node.resource_manager.sort_nodes_reliability(available_nodes, self._replication_times, self._failure_times)
@@ -336,7 +336,7 @@ class Replicator(object):
 
         _log.debug("Lowest: {} - {}".format(lowest, self._replicas.get(lowest)))
         if not self._replicas.get(lowest):
-            _log.info("Could not find replica")
+            _log.warning("[OPTIMIZE] Could not find replica")
             return
 
         highest = available_nodes[0]
@@ -352,43 +352,44 @@ class Replicator(object):
                           new_node=highest, prev_node=lowest, actor_id=replica_id)
             self.pending_replications.add(highest)
             if replica_info['node_id'] == self.node.id:
-                _log.info("We have replica, replicating: {}".format(replica_info))
+                _log.debug("[OPTIMIZE] We have replica, replicating: {}".format(replica_info))
                 self.node.am.replicate(replica_id, highest, cb)
             else:
-                _log.info("Asking {} to replicate actor {} to node {}".format(
+                _log.debug("[OPTIMIZE] Asking {} to replicate actor {} to node {}".format(
                     lowest, replica_id, highest))
-                _log.info("Asking {} - {}".format(lowest, self.node.resource_manager.node_uris.get(lowest)))
+                _log.debug("Asking {} - {}".format(lowest, self.node.resource_manager.node_uris.get(lowest)))
                 self.node.proto.actor_replication_request(replica_id, lowest, highest, self.replication_time, cb)
         else:
-            _log.info("Removing unnecessary replicas")
+            _log.debug("[OPTIMIZE] Removing unnecessary replicas")
             rel_without_lowest = self.node.resource_manager.current_reliability(current_nodes[:-1], self._replication_times, self._failure_times)
-            _log.debug("Reliability without lowest: {}. Desired reliability: {}".format(rel_without_lowest, self.required_reliability))
+            _log.debug("[OPTIMIZE] Reliability without lowest: {}. Desired reliability: {}".format(rel_without_lowest, self.required_reliability))
             if rel_without_lowest > self.required_reliability:
-                _log.info("Removing lowest: {}".format(lowest))
+                _log.debug("[OPTIMIZE] Removing lowest: {}".format(lowest))
                 cb = CalvinCB(self._after_deleting, current_nodes=current_nodes, prev_node=lowest)
                 self.node.proto.actor_destroy(lowest, cb, replica_id)
 
     def _after_replicating(self, status, current_nodes, new_node, prev_node, actor_id):
-        _log.debug("After replicating actor {} from node {} to node {}".format(actor_id, prev_node, new_node))
+        _log.debug("[OPTIMIZE] After replicating actor {} from node {} to node {}".format(actor_id, prev_node, new_node))
         current_nodes = list(current_nodes)
         if new_node in self.pending_replications:
             self.pending_replications.remove(new_node)
         if status and status.data and 'actor_id' in status.data:
             new_actor_id = status.data['actor_id']
-            _log.info("Successfully replicated actor {} from node {} to node {}. New replica: {}".format(actor_id, prev_node, new_node, new_actor_id))
+            _log.debug("[OPTIMIZE] Successfully replicated actor {} from node {} to node {}. New replica: {}".format(actor_id, prev_node, new_node, new_actor_id))
             self.node.storage.add_node_actor(new_node, new_actor_id)
             current_nodes.append(new_node)
             cb = CalvinCB(self._after_deleting, current_nodes=current_nodes, prev_node=prev_node)
             self.node.proto.actor_destroy(prev_node, cb, actor_id)
         else:
-            _log.error("Failed to replicate actor {} from node {} to node {}".format(actor_id, prev_node, new_node))
+            _log.error("[OPTIMIZE] Failed to replicate actor {} from node {} to node {}".format(actor_id, prev_node, new_node))
             self.failed_requests.add(new_node)
             self._optimize(current_nodes)
 
     def _after_deleting(self, status, current_nodes, prev_node):
-        _log.debug("After deleting replica from node {}: {}".format(prev_node, status))
+        _log.debug("[OPTIMIZE] After deleting replica from node {}: {}".format(prev_node, status))
         if status:
-            _log.info("Successfully removed previous replica from node: {}".format(prev_node))
+            _log.debug("[OPTIMIZE] Successfully removed previous replica from node: {}".format(prev_node))
 
-        current_nodes.remove(prev_node)
+        if prev_node in current_nodes:
+            current_nodes.remove(prev_node)
         self._optimize(current_nodes)

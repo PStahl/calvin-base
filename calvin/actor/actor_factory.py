@@ -48,7 +48,7 @@ class ActorFactory(object):
             raise Exception("ERROR_NOT_FOUND")
         try:
             # Create a 'bare' instance of the actor
-            a = class_(actor_type, actor_id=actor_id, app_id=app_id)
+            a = class_(actor_type, actor_id=actor_id, app_id=app_id, node=self.node)
         except Exception as e:
             _log.exception("")
             _log.error("The actor %s(%s) can't be instantiated." % (actor_type, class_.__init__))

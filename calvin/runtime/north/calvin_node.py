@@ -108,7 +108,7 @@ class Node(object):
         self.proto = CalvinProto(self, self.network)
         self.pm = PortManager(self, self.proto)
         self.app_manager = appmanager.AppManager(self)
-        self.resource_manager = ResourceManager()
+        self.resource_manager = ResourceManager(self)
 
         self.app_monitor = AppMonitor(self, self.app_manager, self.storage)
         self.lost_node_handler = LostNodeHandler(self, self.resource_manager, self.pm, self.am, self.storage)
@@ -178,7 +178,7 @@ class Node(object):
         """ Sets up a RT to RT communication channel, only needed if the peer can't be found in storage.
             peers: a list of peer uris, e.g. ["calvinip://127.0.0.1:5001"]
         """
-        _log.info("peersetup(%s)" % (peers))
+        _log.debug("peersetup(%s)" % (peers))
         peers_copy = peers[:]
         peer_node_ids = {}
         if not cb:
@@ -437,7 +437,7 @@ class Node(object):
         if self.testing or node_id in self.heartbeat_actor.nodes:
             return
 
-        _log.info("Registering receiver: {}".format(node_id))
+        _log.debug("Registering receiver: {}".format(node_id))
         self.heartbeat_actor.register(node_id)
 
     def stop(self, callback=None):

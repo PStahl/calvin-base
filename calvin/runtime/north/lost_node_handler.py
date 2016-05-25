@@ -45,11 +45,11 @@ class LostNodeHandler(object):
 
         highest_prio_node = self._highest_prio_node(node_id)
         if highest_prio_node == self.node.id:
-            _log.debug("We have highest id, replicate actors")
+            _log.info("We have highest id, replicate actors")
             self._handle_lost_node(node_id)
         elif highest_prio_node:
             cb = CalvinCB(self._lost_node_request_cb, node_id=node_id, prio_node=highest_prio_node)
-            _log.debug("Sending lost node msg of node {} to {} - {}".format(
+            _log.info("Sending lost node msg of node {} to {} - {}".format(
                 node_id, highest_prio_node, self.resource_manager.node_uris.get(highest_prio_node)))
             self.node.proto.lost_node(highest_prio_node, node_id, cb)
 
@@ -117,7 +117,7 @@ class LostNodeHandler(object):
                 self._lost_nodes.remove(node_id)
             self.handle_lost_node(node_id)
         else:
-            _log.debug("Node {} successfully handled lost node {} - {}".format(prio_node, node_id, status))
+            _log.info("Node {} successfully handled lost node {} - {}".format(prio_node, node_id, status))
 
     def _lost_node_cb(self, status, node_id):
         """ Callback when we handled lost node """
@@ -126,7 +126,7 @@ class LostNodeHandler(object):
         if not status:
             _log.warning("We failed to handle lost node {}: {}".format(node_id, status))
         else:
-            _log.debug("We successfully handled lost node {} - {} - {}".format(node_id, self.node.id, status))
+            _log.info("We successfully handled lost node {} - {} - {}".format(node_id, self.node.id, status))
             self.storage.get_node(node_id, self._delete_node)
             uri = self.resource_manager.node_uris.get(node_id)
             if uri:
@@ -160,7 +160,7 @@ class LostNodeHandler(object):
             return None
 
         highest = sorted(node_ids)[0]
-        _log.info("Highest prio node: {} - {}".format(highest, self.resource_manager.node_uris.get(highest)))
+        _log.debug("Highest prio node: {} - {}".format(highest, self.resource_manager.node_uris.get(highest)))
         return highest
 
     def replicate_node_actors(self, node_id, cb):

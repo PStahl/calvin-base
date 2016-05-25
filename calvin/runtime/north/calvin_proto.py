@@ -270,7 +270,7 @@ class CalvinProto(CalvinCBClass):
                                                                state=state,
                                                                prev_connections=prev_connections,
                                                                actor_args=args,
-                                                               app_id=app_id), timeout=0.5):
+                                                               app_id=app_id), timeout=0.3):
             # Already have link just continue in _actor_replication
                 self._actor_replication(to_rt_uuid, callback, actor_type, state, prev_connections, args, app_id,
                                         response.CalvinResponse(True))
@@ -287,7 +287,7 @@ class CalvinProto(CalvinCBClass):
                        'app_id': app_id
                    },
                    'args': actor_args}
-            self.network.links[to_rt_uuid].send_with_reply(callback, msg, timeout=0.5)
+            self.network.links[to_rt_uuid].send_with_reply(callback, msg, timeout=1.0)
         elif callback:
             callback(status=status)
 
@@ -324,7 +324,7 @@ class CalvinProto(CalvinCBClass):
                                                                  from_node_id=from_node_id,
                                                                  to_node_id=to_node_id,
                                                                  replication_time=replication_time,
-                                                                 callback=callback), timeout=0.2):
+                                                                 callback=callback), timeout=0.3):
             # Already have link just continue in _actor_replication
                 self._actor_replication_request(actor_id, from_node_id, to_node_id, replication_time,
                                                 callback, status=response.CalvinResponse(True))
@@ -340,7 +340,7 @@ class CalvinProto(CalvinCBClass):
                    'from_node_id': from_node_id,
                    'to_node_id': to_node_id}
             try:
-                self.network.links[from_node_id].send_with_reply(callback, msg, timeout=1.5*replication_time)
+                self.network.links[from_node_id].send_with_reply(callback, msg, timeout=1.0)  # 1.5*replication_time)
             except KeyError as e:
                 _log.error("Failed to send actor replication request to: {} - {}".format(from_node_id, e))
                 if callback:
@@ -747,7 +747,7 @@ class CalvinProto(CalvinCBClass):
             prev_connections: list of node ids to setup a connecting with
         """
         if self.node.network.link_request(to_rt_uuid, CalvinCB(self._lost_node, to_rt_uuid=to_rt_uuid,
-                                                               callback=callback, node_id=node_id), timeout=0.2):
+                                                               callback=callback, node_id=node_id), timeout=0.3):
             # Already have link just continue in _peer_setup
                 self._lost_node(to_rt_uuid, callback, node_id, status=response.CalvinResponse(True))
 
@@ -759,7 +759,7 @@ class CalvinProto(CalvinCBClass):
                 node_id, to_rt_uuid, self.node.resource_manager.node_uris.get(to_rt_uuid), callback))
             msg = {'cmd': 'LOST_NODE',
                    'node_id': node_id}
-            self.network.links[to_rt_uuid].send_with_reply(callback, msg, timeout=0.5)
+            self.network.links[to_rt_uuid].send_with_reply(callback, msg, timeout=1.5)
         elif callback:
             _log.error("Failed to send LOST_NODE of node {} to {} - {}".format(node_id, to_rt_uuid, self.node.resource_manager.node_uris.get(to_rt_uuid)))
             callback(status=status)
@@ -800,7 +800,7 @@ class CalvinProto(CalvinCBClass):
 
     ### RESOURCE USAGE ###
 
-    def report_usage(self, to_rt_uuid, node_id, usage, callback=None, timeout=0.3):
+    def report_usage(self, to_rt_uuid, node_id, usage, callback=None, timeout=0.5):
         if self.node.network.link_request(to_rt_uuid, CalvinCB(self._report_usage, to_rt_uuid, node_id, usage, callback), timeout=timeout):
             # Already have link just continue in _actor_new
             self._report_usage(to_rt_uuid, node_id, usage, callback, response.CalvinResponse(True))
@@ -812,7 +812,7 @@ class CalvinProto(CalvinCBClass):
                    'node_id': node_id,
                    'usage': usage}
             try:
-                self.network.links[to_rt_uuid].send_with_reply(callback, msg, timeout=0.3)
+                self.network.links[to_rt_uuid].send_with_reply(callback, msg, timeout=1.5)
             except KeyError as e:
                 if callback:
                     callback(status=response.CalvinResponse(False))

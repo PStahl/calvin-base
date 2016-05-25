@@ -26,3 +26,6 @@ build/
 test_scripts/*
 *.log
 *.csv
+*.mp4
+*.m4v
+*videos*

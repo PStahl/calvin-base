@@ -20,7 +20,8 @@ MAX_PREFERRED_USAGE = 80
 
 
 class ResourceManager(object):
-    def __init__(self, history_size=DEFAULT_HISTORY_SIZE):
+    def __init__(self, node, history_size=DEFAULT_HISTORY_SIZE):
+        self.node = node
         self.history_size = history_size
         self.usages = defaultdict(lambda: deque(maxlen=self.history_size))
         self.reliability_calculator = ReliabilityCalculator()
@@ -28,6 +29,10 @@ class ResourceManager(object):
         self.test_sync = 2
         self._lost_nodes = set()
         self._rep_times = {}
+
+    @property
+    def lost_node_time(self):
+        return self.node.heartbeat_timeout
 
     def register_uri(self, node_id, uri):
         _log.debug("Registering uri: {} - {}".format(node_id, uri))
@@ -113,7 +118,7 @@ class ResourceManager(object):
         if key in self._rep_times:
             return self._rep_times[key]
 
-        value = self.reliability_calculator.replication_time(replication_times) + LOST_NODE_TIME
+        value = self.reliability_calculator.replication_time(replication_times) + self.lost_node_time
         self._rep_times[key] = value
         return value
 

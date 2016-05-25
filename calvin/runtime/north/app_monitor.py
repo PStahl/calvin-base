@@ -16,7 +16,7 @@ class AppMonitor(object):
         self._monitor_count = 0
         self.app_manager = app_manager
         self.storage = storage
-        freq = _conf.get('global', 'app_monitor_frequency')
+        freq = _conf.get('global', 'app_monitor_frequency') or 0
         self._frequency = int(freq)
 
     def check_reliabilities(self):
@@ -42,6 +42,7 @@ class AppMonitor(object):
         if not value:
             _log.warning("Failed to get application actors from storage: {}".format(key))
             return
+        _log.debug("Checking reliability for actors: {}".format(value))
         self._check_actors_reliability(actors=value, app_info=app_info, names=[], index=0, start_time=start_time)
 
     def _check_actors_reliability(self, actors, app_info, names, index, start_time, status=None):
