@@ -7,4 +7,4 @@ fi
 port=$((4999+$n))
 controlport=$(($port+1))
 
-csruntime --host `ip route get 8.8.8.8 | awk '{print $NF; exit}'` --port $port --controlport $controlport --keep-alive -s
+csruntime --host localhost --port $port --controlport $controlport --keep-alive -s

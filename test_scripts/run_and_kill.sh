@@ -14,7 +14,7 @@ fi
 port=$((5000+$n))
 controlport=$(($port+1))
 
-host=`ip route get 8.8.8.8 | awk '{print $NF; exit}'`
+host="localhost"
 
 extra=0
 
@@ -36,17 +36,17 @@ while true; do
     sleep 0.5
     #echo `ps aux | grep -E "(csruntime|py.test)"`
 
-    #echo "cscontrol http://gru.nefario:5002 nodes add calvinip://$host:$port"
+    #echo "cscontrol http://localhost:5002 nodes add calvinip://$host:$port"
     nodes_add="null"
     regex="null|Read timed out"
     while [[ "$nodes_add" =~ $regex ]];
     do
         #echo "adding node"
-        #cscontrol http://gru.nefario:5002 nodes list
-        nodes_add=`cscontrol http://gru.nefario:5002 nodes add calvinip://$host:$port`
+        #cscontrol http://localhost:5002 nodes list
+        nodes_add=`cscontrol http://localhost:5002 nodes add calvinip://$host:$port`
         echo $nodes_add
     done
-    #nodes_add=`cscontrol http://gru.nefario:5002 nodes add calvinip://$host:$port`
+    #nodes_add=`cscontrol http://localhost:5002 nodes add calvinip://$host:$port`
     #echo "$nodes_add"
     sleep $rand
 
@@ -58,13 +58,13 @@ while true; do
     date +"%Y-%m-%d %H:%M:%S.%N"
     printf "\n\n"
 
-    nodes=`cscontrol http://gru.nefario:5002 nodes list`
+    nodes=`cscontrol http://localhost:5002 nodes list`
     n_nodes=$(grep -o " " <<< "$nodes" | wc -l)
-    while [ $n_nodes -lt 3 ]
+    while [ $n_nodes -lt 1 ]
     do
         echo "not enough nodes, sleeping..."
         echo $n_nodes
-        nodes=`cscontrol http://gru.nefario:5002 nodes list`
+        nodes=`cscontrol http://localhost:5002 nodes list`
         n_nodes=$(grep -o " " <<< "$nodes" | wc -l)
         sleep 0.2
         extra=`awk "BEGIN {print ($extra + 0.2)}"`
