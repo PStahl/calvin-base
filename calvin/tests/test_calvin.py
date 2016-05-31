@@ -2263,14 +2263,6 @@ class TestOptimization(CalvinTestBase):
         self._kill_all()
         os.environ["CALVIN_TESTING"] = "1"
 
-    def _simulate_failures(self):
-        for rt in self.runtimes:
-            utils.simulate_node_failure(rt, rt.id, 1)
-
-        time.sleep(5)
-        for rt in self.runtimes:
-            utils.simulate_node_failure(rt, rt.id, 1)
-
     def _add_reliable(self):
         csruntime(self.ip_addr, port=5030, controlport=5031, attr={},
                   configfile="/tmp/calvin5030.conf")
@@ -2388,7 +2380,10 @@ class TestOptimization(CalvinTestBase):
         """
 
         app_info, errors, warnings = compiler.compile(script, "simple")
-        d = deployer.Deployer(self.runtime, app_info, deploy_info={"required_reliability": 0.95})
+        d = deployer.Deployer(self.runtime, app_info, deploy_info={
+            "required_reliability": 0.95,
+            "master_nodes": ["calvinip://%s:5032" % self.ip_addr]
+        })
         app_id = d.deploy()
         self.deployer = d
         time.sleep(0.2)
@@ -2397,36 +2392,21 @@ class TestOptimization(CalvinTestBase):
         snk = d.actor_map['simple:snk']
         return (d, app_id, src, snk)
 
-    def testLoseSnkActorWithLocalSource(self):
+    def testOptimization(self):
         d, app_id, src, snk = self._start_app(replicate_snk=1)
 
-        replica = utils.replicate(self.runtime, snk, self.runtime2.id)
+        utils.replicate(self.runtime, snk, self.runtime2.id)
         time.sleep(0.1)
-        replica = utils.replicate(self.runtime, snk, self.runtime3.id)
-        time.sleep(0.2)
-
-        expected_before = expected_tokens(self.runtime, src, 'std.ReplicatedCountTimer')
-        actual_snk_before = actual_tokens(self.runtime, snk)
-        actual_replica_before = actual_tokens(self.runtime2, replica)
+        utils.replicate(self.runtime, snk, self.runtime3.id)
+        time.sleep(0.1)
 
         actors_before = utils.get_application_actors(self.runtime, app_id)
 
-        self._simulate_failures()
+        utils.simulate_node_failure(self.runtime, self.runtime2.id, 1)
+        utils.simulate_node_failure(self.runtime, self.runtime3.id, 1)
         self._add_reliable()
         time.sleep(5)
 
-        actual_replicas = self._check_reliability(self.runtime, app_id, actors_before, 'simple:snk')
-
-        expected = expected_tokens(self.runtime, src, 'std.ReplicatedCountTimer')
-        actual = actual_tokens(self.runtime, snk)
-
-        assert len(expected) > len(expected_before)
-        assert len(actual) > len(actual_snk_before)
-        assert len(actual) > len(actual_replica_before)
-
-        self.assert_list_prefix(expected, actual)
-
-        self._check_actuals(expected, actual_replicas, actual_replica_before)
         actors_after = utils.get_application_actors(self.runtime, app_id)
         assert len(actors_before) > len(actors_after)
 

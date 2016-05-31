@@ -1222,8 +1222,8 @@ class CalvinControl(object):
             node_id = match.group(1)
             nbr = match.group(2)
             uri = self.node.resource_manager.node_uris.get(node_id)
-            now = time.time()
             for i in range(int(nbr)):
+                now = time.time()
                 self.node.storage.add_failure_time(uri, node_id, now + i)
             status = calvinresponse.OK
         except Exception as e:
