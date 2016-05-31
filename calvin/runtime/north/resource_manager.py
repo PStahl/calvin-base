@@ -16,7 +16,7 @@ _log = get_logger(__name__)
 DEFAULT_HISTORY_SIZE = 20
 DEFAULT_REPLICATION_HISTORY_SIZE = 5
 DEFAULT_REPLICATION_TIME = 2.0
-DEFAULT_NODE_REALIABILITY = 0.8
+DEFAULT_NODE_RELIABILITY = 0.8
 LOST_NODE_TIME = 0.5
 MAX_PREFERRED_USAGE = 80
 
@@ -114,6 +114,7 @@ class ResourceManager(object):
         return most_busy
 
     def get_reliability(self, node_id, replication_times, failure_info):
+        _log.info("Getting reliability for {}".format(node_id))
         uri = self.node_uris.get(node_id)
         if uri:
             replication_time = self.replication_time(replication_times)
@@ -121,9 +122,12 @@ class ResourceManager(object):
                 failure_info = failure_info[uri]
             else:
                 failure_info = []
-            return self.reliability_calculator.calculate_reliability(failure_info, replication_time)
+            rel = self.reliability_calculator.calculate_reliability(failure_info, replication_time)
+            _log.info("Returning reliability for {}: {}".format(node_id, rel))
+            return rel
         else:
-            return DEFAULT_NODE_REALIABILITY
+            _log.info("Returning default reliability: {}".format(DEFAULT_NODE_RELIABILITY))
+            return DEFAULT_NODE_RELIABILITY
 
     def replication_time(self, replication_times):
         if not replication_times:
