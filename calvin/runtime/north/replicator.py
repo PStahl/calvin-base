@@ -364,7 +364,7 @@ class Replicator(object):
             rel_without_lowest = self.node.resource_manager.current_reliability(current_nodes[:-1], self._replication_times, self._failure_times)
             _log.debug("Reliability without lowest: {}. Desired reliability: {}".format(rel_without_lowest, self.required_reliability))
             if rel_without_lowest > self.required_reliability:
-                _log.info("Removing lowest: {}".format(lowest))
+                _log.info("Removing actor {} from node with lowest reliability: {}".format(replica_id, lowest))
                 cb = CalvinCB(self._after_deleting, current_nodes=current_nodes, prev_node=lowest)
                 self.node.proto.actor_destroy(lowest, cb, replica_id)
 

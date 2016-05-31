@@ -13,6 +13,6 @@ class ReliabilityScheduler(object):
     def sort(self, node_ids, replication_times, failure_info):
         """Returns the nodes sorted by preference with the most reliable first"""
         node_ids = [(node_id, self.resource_manager.get_reliability(node_id, replication_times, failure_info)) for node_id in node_ids]
+        _log.info("Sorting nodes {} after reliability {}".format([x[0] for x in node_ids], [x[1] for x in node_ids]))
         node_ids.sort(key=lambda x: (x[1], x[0]), reverse=True)
-        _log.debug("Sorting nodes {} after reliability {}".format([x[0] for x in node_ids], [x[1] for x in node_ids]))
         return [x[0] for x in node_ids]
